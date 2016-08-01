@@ -3,18 +3,35 @@ RMasterBot.iml
 node_modules
 .DS_Store
 
-conf.*.app.js
+access_tokens/*
+!access_tokens/.gitkeep
 
-medias/*
-!medias/placeholder
+configurations/*
+!configurations/.gitkeep
 
-oauth_access_cache/*
-!oauth_access_cache/placeholder
+core/*
+!core/.gitkeep
 
-pids/*
-!pids/placeholder
+docs/*
+!docs/.gitkeep
+
+downloads/*
+!downloads/.gitkeep
+
+helps/*
+!helps/.gitkeep
+
+jobs/*
+!jobs/.gitkeep
+
+models/*
+!models/.gitkeep
 
 private_jobs/*
-!private_jobs/placeholder
+!private_jobs/.gitkeep
 
-rate_limit_cache/**/*.json
+process_ids/*
+!process_ids/.gitkeep
+
+rate_limits/*
+!rate_limits/.gitkeep
