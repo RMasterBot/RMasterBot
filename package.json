@@ -18,5 +18,9 @@
   "bugs": {
     "url": "https://github.com/rancoud/RMasterBot/issues"
   },
-  "homepage": "https://github.com/rancoud/RMasterBot#readme"
+  "homepage": "https://github.com/rancoud/RMasterBot#readme",
+  "devDependencies": {
+    "colors": "^1.1.2",
+    "npmlog": "^4.0.0"
+  }
 }
