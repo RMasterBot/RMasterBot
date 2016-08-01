@@ -9,17 +9,11 @@ access_tokens/*
 configurations/*
 !configurations/.gitkeep
 
-core/*
-!core/.gitkeep
-
 docs/*
 !docs/.gitkeep
 
 downloads/*
 !downloads/.gitkeep
-
-helps/*
-!helps/.gitkeep
 
 jobs/*
 !jobs/.gitkeep
