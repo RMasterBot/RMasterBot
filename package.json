@@ -1,0 +1,22 @@
+{
+  "name": "rmasterbot",
+  "version": "1.0.0",
+  "description": "RMasterBot",
+  "main": "install.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rancoud/RMasterBot.git"
+  },
+  "author": "Rancoud",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rancoud/RMasterBot/issues"
+  },
+  "homepage": "https://github.com/rancoud/RMasterBot#readme"
+}
