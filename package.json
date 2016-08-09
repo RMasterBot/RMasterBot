@@ -21,6 +21,7 @@
   "homepage": "https://github.com/rancoud/RMasterBot#readme",
   "devDependencies": {
     "colors": "^1.1.2",
-    "npmlog": "^4.0.0"
+    "npmlog": "^4.0.0",
+    "yauzl": "^2.6.0"
   }
 }
