@@ -32,3 +32,7 @@ process_ids/*
 
 rate_limits/*
 !rate_limits/.gitkeep
+
+_bot/*
+_bot.zip
+bots.json

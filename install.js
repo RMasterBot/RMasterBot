@@ -2,13 +2,16 @@ function Install() {
   this.botToInstall = null;
   this.botType = null;
   this.log = require('npmlog');
+  this.fs = require('fs');
   this.countFollowRedirect = 3;
   this.rootFolder = __dirname;
   this.zipFilepath = this.rootFolder + '/_bot.zip';
   this.tempBotFolder = this.rootFolder + '/_bot';
-  this.filesCopied = [];
-  this.foldersCopied = [];
+  this.botsInstalledFile = this.rootFolder + '/bots.json';
+  this.installFileFromNewBot = this.tempBotFolder + '/install.json';
   this.foldersSupported = ['applications', 'configurations', 'docs', 'jobs', 'models'];
+  this.foldersToCreate = ['access_tokens', 'applications', 'configurations', 'docs', 'downloads', 'jobs', 'models', 'private_jobs', 'process_ids', 'rate_limits'];
+  this.maxDepthCopyFolder = 3;
 
   this.getArguments();
   this.detectBotType();
@@ -91,7 +94,7 @@ Install.prototype.downloadBot = function(options){
 
     that.log.info('RMasterBot', 'Prepare to download');
 
-    var output = require('fs').createWriteStream(that.zipFilepath);
+    var output = that.fs.createWriteStream(that.zipFilepath);
     response.pipe(output);
 
     response.on('end', function(){
@@ -169,37 +172,35 @@ Install.prototype.updateOptionsWithRedirectUrl = function(options, url){
 Install.prototype.deleteFolderRecursive = function(path) {
   var that = this;
   var files = [];
-  var fs = require('fs');
 
-  if(fs.existsSync(path)) {
-    files = fs.readdirSync(path);
+  if(that.lstatSync(path)) {
+    files = that.fs.readdirSync(path);
     files.forEach(function(file){
       var currentPath = path + "/" + file;
-      if(fs.lstatSync(currentPath).isDirectory()) {
+      if(that.lstatSync(currentPath).isDirectory()) {
         that.deleteFolderRecursive(currentPath);
       }
       else {
-        fs.unlinkSync(currentPath);
+        that.fs.unlinkSync(currentPath);
       }
     });
-    fs.rmdirSync(path);
+    that.fs.rmdirSync(path);
   }
 };
 
 Install.prototype.unzipBot = function(){
   var that = this;
-  var fs = require('fs');
-  
+
   require('yauzl').open(this.zipFilepath, {lazyEntries: true}, function(error, zipfile) {
     if (error){
-      that.cleanFailedInstall();
       that.stopProcess('Failed open zip: ' + error.toString());
     }
 
     var foldersCreated = [];
+    var countFilesCopied = 0;
     
     that.log.info('RMasterBot', 'Create temp folder at: ' + that.rootFolder);
-    fs.mkdirSync(that.tempBotFolder);
+    that.fs.mkdirSync(that.tempBotFolder);
     foldersCreated.push(that.tempBotFolder + '/');
     
     zipfile.readEntry();
@@ -217,7 +218,7 @@ Install.prototype.unzipBot = function(){
           var file = that.extractPathAndFileFromZip(entry.fileName);
           var folderToCreate = that.tempBotFolder + file.path;
           if(foldersCreated.indexOf(folderToCreate) === -1) {
-            fs.mkdirSync(folderToCreate);
+            that.fs.mkdirSync(folderToCreate);
             foldersCreated.push(folderToCreate);
           }
 
@@ -225,12 +226,17 @@ Install.prototype.unzipBot = function(){
           if(file.path === '/') {
             filepath = that.tempBotFolder + file.path + file.file;
           }
-          readStream.pipe(fs.createWriteStream(entry.fileName));
+          readStream.pipe(that.fs.createWriteStream(filepath));
           readStream.on("end", function() {
+            countFilesCopied++;
             zipfile.readEntry();
           });
         });
       }
+    });
+    zipfile.on('close', function(){
+      that.log.info('RMasterBot', countFilesCopied + ' files copied in temp bot folder');
+      that.checkInstallJson();
     });
   });
 };
@@ -238,27 +244,6 @@ Install.prototype.unzipBot = function(){
 Install.prototype.stopProcess = function(exception){
   this.log.error('RMasterBot', exception);
   process.exit(-1);
-};
-
-Install.prototype.cleanFailedInstall = function () {
-  var fs = require('fs');
-
-  //fs.unlinkSync(this.zipFilepath);
-  this.log.error('RMasterBot', 'Delete bot file: ' + this.filesCopied[i]);
-
-  //this.log.error('RMasterBot', 'Delete temp bot folder: ' + this.filesCopied[i]);
-
-  var countFiles = this.filesCopied.length;
-  for(var i = 0; i < countFiles; i++) {
-    //fs.unlinkSync(this.filesCopied[i]);
-    this.log.error('RMasterBot', 'Delete file copied from zip: ' + this.filesCopied[i]);
-  }
-
-  var countFolders = this.foldersCopied.length;
-  for(var j = 0; j < countFiles; j++) {
-    //fs.rmdirSync(this.foldersCopied[j]);
-    this.log.error('RMasterBot', 'Delete folder copied from zip: ' + this.foldersCopied[j]);
-  }
 };
 
 Install.prototype.extractPathAndFileFromZip = function(path) {
@@ -301,6 +286,240 @@ Install.prototype.extractPathAndFileFromZip = function(path) {
     path: '/' + finalParts.join('/'),
     file: file
   };
+};
+
+Install.prototype.checkInstallJson = function(){
+  var botsInstalledJson = null;
+  var botToInstallJson = null;
+
+  if(this.lstatSync(this.botsInstalledFile)) {
+    botsInstalledJson = JSON.parse(this.fs.readFileSync(this.botsInstalledFile, 'utf8'));
+  }
+  else {
+    botsInstalledJson = [];
+    this.fs.writeFileSync(this.botsInstalledFile, JSON.stringify(botsInstalledJson), 'utf8');
+  }
+
+  if(this.lstatSync(this.installFileFromNewBot)) {
+    botToInstallJson = JSON.parse(this.fs.readFileSync(this.installFileFromNewBot, 'utf8'));
+  }
+  else {
+    this.stopProcess('file install.json is missing in bot temp folder');
+  }
+
+  var hasFolderProblem = false;
+  var hasNameProblem = false;
+  var i;
+  var len = botsInstalledJson.length;
+  for(i = 0; i < len; i++) {
+    if(botsInstalledJson[i].bot_folder == botToInstallJson.bot_folder) {
+      hasFolderProblem = true;
+    }
+
+    if(botsInstalledJson[i].bot_name == botToInstallJson.bot_name) {
+      hasNameProblem = true;
+    }
+  }
+
+  if(hasFolderProblem || hasNameProblem) {
+    this.resolveConflict(botToInstallJson, hasFolderProblem, hasNameProblem);
+  }
+  else {
+    this.addNewBotToSavedBotsFile(botToInstallJson);
+  }
+};
+
+Install.prototype.resolveConflict = function(botToInstallJson, hasFolderProblem, hasNameProblem){
+  var that = this;
+  var readline = require('readline');
+  var botsInstalledJson = JSON.parse(this.fs.readFileSync(this.botsInstalledFile, 'utf8'));
+  var len = botsInstalledJson.length;
+  var i;
+  var hasToAddBot = true;
+  var rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  function eraseBot() {
+    hasToAddBot = false;
+    end();
+  }
+
+  function changeFolder() {
+    rl.question('New folder name ?', function(answer) {
+      if(answer.lenght < 1) {
+        console.log('Error, incorrect name [a-z 0-9 _ - ] (you give ' + answer + ')');
+        changeFolder();
+        return;
+      }
+
+      if(/^[a-z0-9_-]+$/g.test(answer) === false) {
+        console.log('Error, incorrect name [a-z 0-9 _ - ] (you give ' + answer + ')');
+        changeFolder();
+        return;
+      }
+
+      for(var i = 0; i < len; i++) {
+        if(botsInstalledJson[i].bot_folder == answer) {
+          console.log('Error, folder ' + botsInstalledJson[i].bot_folder + ' already taken');
+          changeFolder();
+          return;
+        }
+      }
+
+      if (that.lstatSync(that.rootFolder + '/applications/' + answer) && that.lstatSync(that.rootFolder + '/applications/' + answer).isDirectory()) {
+        console.log('Error, folder ' + answer + ' already exists');
+        changeFolder();
+        return;
+      }
+
+      console.log('New folder name is ' + answer);
+      botToInstallJson.bot_folder = answer;
+
+      if(hasNameProblem) {
+        changeName();
+      }
+      else {
+        end();
+      }
+    });
+  }
+  
+  function changeName() {
+    rl.question('New name ?', function(answer) {
+      if(answer.lenght < 1) {
+        console.log('Error, incorrect name [a-z A-Z 0-9 _ - ] (you give ' + answer + ')');
+        changeName();
+        return;
+      }
+
+      if(/^[a-z0-9_-]+$/gi.test(answer) === false) {
+        console.log('Error, incorrect name [a-z A-Z 0-9 _ - ] (you give ' + answer + ')');
+        changeName();
+        return;
+      }
+
+      for(var i = 0; i < len; i++) {
+        if(botsInstalledJson[i].bot_name == answer) {
+          console.log('Error, folder ' + botsInstalledJson[i].bot_name + ' already taken');
+          changeName();
+          return;
+        }
+      }
+
+      console.log('New name is ' + answer);
+      botToInstallJson.bot_name = answer;
+
+      end();
+    });
+  }
+  
+  function resolveBot() {
+    rl.question('There is conflict with bot folder and bot name, do you want to erase old bot for new bot (e) or change new bot configuration (c) or quit (q) ? (e/c/q) ', function(answer){
+      if(answer == 'c') {
+        changeFolder();
+      }
+      else if(answer == 'e') {
+        eraseBot();
+      }
+      else if(answer == 'q') {
+        that.stopProcess('Stopped by user');
+      }
+      else {
+        resolveBot();
+      }
+    });
+  }
+
+  function end() {
+    rl.close();
+    if(hasToAddBot) {
+      that.addNewBotToSavedBotsFile(botToInstallJson);
+    }
+    
+    that.copyTempBotToFinalDestination(botToInstallJson);
+  }
+  
+  if(hasFolderProblem && hasNameProblem) {
+    resolveBot();
+  }
+  else if(hasFolderProblem) {
+    console.log('There is a conflict with bot folder');
+    changeFolder();
+  }
+  else if(hasNameProblem) {
+    console.log('There is a conflict with bot name');
+    changeName();
+  }
+};
+
+Install.prototype.addNewBotToSavedBotsFile = function(botToInstallJson) {
+  var botsInstalledJson = JSON.parse(this.fs.readFileSync(this.botsInstalledFile, 'utf8'));
+  botsInstalledJson.push(botToInstallJson);
+  this.fs.writeFileSync(this.botsInstalledFile, JSON.stringify(botsInstalledJson), 'utf8');
+};
+
+Install.prototype.copyTempBotToFinalDestination = function(botToInstallJson) {
+  var len = this.foldersToCreate.length;
+  var i;
+
+  for(i = 0; i < len; i++) {
+    var folder = this.rootFolder + '/' + this.foldersToCreate[i] + '/' + botToInstallJson.bot_name;
+    if (this.lstatSync(folder) === false || this.lstatSync(folder).isDirectory() === false) {
+      try {
+        this.fs.mkdirSync(folder);
+      }
+      catch(e) {
+        this.stopProcess(e.toString());
+      }
+    }
+
+    this.copyFilesRecursive(this.tempBotFolder + '/' + this.foldersToCreate[i], folder, 0);
+  }
+};
+
+Install.prototype.copyFilesRecursive = function(srcPath, destPath, depth) {
+  if(depth > this.maxDepthCopyFolder) {
+    this.stopProcess('Depth copy folder exceded');
+  }
+  var that = this;
+  var files = [];
+
+  if(that.lstatSync(srcPath)) {
+    files = that.fs.readdirSync(srcPath);
+    files.forEach(function(file){
+      var newSrcPath = srcPath + "/" + file;
+      var newDestPath = destPath + "/" + file;
+      if(that.lstatSync(newSrcPath).isDirectory()) {
+        depth++;
+
+        if (that.lstatSync(newDestPath) === false || that.lstatSync(newDestPath).isDirectory() === false) {
+          try {
+            that.fs.mkdirSync(newDestPath);
+          }
+          catch(e) {
+            that.stopProcess(e.toString());
+          }
+        }
+        
+        that.copyFilesRecursive(newSrcPath, newDestPath, depth);
+      }
+      else {
+        var fileData = that.fs.readFileSync(newSrcPath);
+        that.fs.writeFileSync(newDestPath, fileData);
+      }
+    });
+  }
+};
+
+Install.prototype.lstatSync = function(path) {
+  try {
+    return this.fs.lstatSync(path);
+  }
+  catch(e){
+    return false;
+  }
 };
 
 new Install();
