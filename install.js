@@ -28,12 +28,12 @@ Install.prototype.getArguments = function(){
       this.botToInstall = process.argv[i];
     }
   }
-  
+
   if(this.botToInstall === null) {
     this.stopProcess('No argument provided');
   }
-  
-  this.log.info('RMasterBot', 'Bot to install: ' + this.botToInstall);
+
+  this.logInfo('Bot to install: ' + this.botToInstall);
 };
 
 Install.prototype.showHelp = function(){
@@ -60,7 +60,7 @@ Install.prototype.detectBotType = function() {
     this.stopProcess('Type Bot not detected');
   }
 
-  this.log.info('RMasterBot', 'Type Bot: ' + this.botType);
+  this.logInfo('Type Bot: ' + this.botType);
 };
 
 Install.prototype.downloadBot = function(options){
@@ -74,13 +74,13 @@ Install.prototype.downloadBot = function(options){
     this.stopProcess('Too much redirect');
   }
 
-  this.log.info('RMasterBot', 'Retreive from ' + options.host + options.path);
+  this.logInfo('Retreive from ' + options.host + options.path);
 
   request.on('response', function(response) {
     if(response.statusCode >= 300 && response.statusCode < 400) {
       that.countFollowRedirect--;
       options = that.updateOptionsWithRedirectUrl(options, response.headers['location']);
-      that.log.info('RMasterBot', 'Redirect location to ' + response.headers['location']);
+      that.logInfo('Redirect location to ' + response.headers['location']);
       that.downloadBot(options);
       return;
     }
@@ -92,20 +92,20 @@ Install.prototype.downloadBot = function(options){
       that.stopProcess('Content type is incorrect: application/zip needed, server provide ' + response.headers['content-type']);
     }
 
-    that.log.info('RMasterBot', 'Prepare to download');
+    that.logInfo('Prepare to download');
 
     var output = that.fs.createWriteStream(that.zipFilepath);
     response.pipe(output);
 
     response.on('end', function(){
-      that.log.info('RMasterBot', 'Download success');
+      that.logInfo('Download success');
       that.deleteFolderRecursive(that.tempBotFolder);
 
-      that.log.info('RMasterBot', 'Clean temp bot folder: ' + that.tempBotFolder);
+      that.logInfo('Clean temp bot folder: ' + that.tempBotFolder);
       that.unzipBot();
     });
   });
-  
+
   request.on('error', function(error){
     that.stopProcess('Download error: ' + error.toString());
   });
@@ -134,7 +134,7 @@ Install.prototype.getOptions = function(){
     host = 'github.com';
     path = '/rancoud/R' + this.botToInstall + 'Bot/zipball/master';
   }
-  
+
   return {
     host: host,
     path: path,
@@ -199,7 +199,7 @@ Install.prototype.unzipBot = function(){
     var foldersCreated = [];
     var countFilesCopied = 0;
     
-    that.log.info('RMasterBot', 'Create temp folder at: ' + that.rootFolder);
+    that.logInfo('RMasterBot', 'Create temp folder at: ' + that.rootFolder);
     that.fs.mkdirSync(that.tempBotFolder);
     foldersCreated.push(that.tempBotFolder + '/');
     
@@ -321,6 +321,9 @@ Install.prototype.checkInstallJson = function(){
     }
   }
 
+  this.log.info('RMasterBot', 'Bot Folder: ' + botToInstallJson.bot_folder);
+  this.log.info('RMasterBot', 'Bot Name: ' + botToInstallJson.bot_name);
+  
   if(hasFolderProblem || hasNameProblem) {
     this.resolveConflict(botToInstallJson, hasFolderProblem, hasNameProblem);
   }
@@ -347,7 +350,7 @@ Install.prototype.resolveConflict = function(botToInstallJson, hasFolderProblem,
   }
 
   function changeFolder() {
-    rl.question('New folder name ?', function(answer) {
+    rl.question('New folder name ? ', function(answer) {
       if(answer.lenght < 1) {
         console.log('Error, incorrect name [a-z 0-9 _ - ] (you give ' + answer + ')');
         changeFolder();
@@ -387,7 +390,7 @@ Install.prototype.resolveConflict = function(botToInstallJson, hasFolderProblem,
   }
   
   function changeName() {
-    rl.question('New name ?', function(answer) {
+    rl.question('New name ? ', function(answer) {
       if(answer.lenght < 1) {
         console.log('Error, incorrect name [a-z A-Z 0-9 _ - ] (you give ' + answer + ')');
         changeName();
@@ -477,6 +480,10 @@ Install.prototype.copyTempBotToFinalDestination = function(botToInstallJson) {
 
     this.copyFilesRecursive(this.tempBotFolder + '/' + this.foldersToCreate[i], folder, 0);
   }
+
+  this.log.info('RMasterBot', 'New bot "' + botToInstallJson.bot_name + '" is installed in folder "' + botToInstallJson.bot_folder + '"');
+  
+  this.launchSetupConfiguration(botToInstallJson);
 };
 
 Install.prototype.copyFilesRecursive = function(srcPath, destPath, depth) {
@@ -521,5 +528,13 @@ Install.prototype.lstatSync = function(path) {
     return false;
   }
 };
+
+Install.prototype.launchSetupConfiguration = function(botToInstallJson) {
+  console.log(botToInstallJson);
+};
+
+Install.prototype.logInfo = function(string) {
+  this.log.info('RMasterBot', string);
+}
 
 new Install();
