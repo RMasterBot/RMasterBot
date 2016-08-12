@@ -336,15 +336,15 @@ Install.prototype.checkInstallJson = function(){
 
 Install.prototype.resolveConflict = function(botToInstallJson, hasFolderProblem, hasNameProblem){
   var that = this;
-  var readline = require('readline');
   var botsInstalledJson = JSON.parse(this.fs.readFileSync(this.botsInstalledFile, 'utf8'));
   var len = botsInstalledJson.length;
   var i;
   var hasToAddBot = true;
-  var rl = readline.createInterface({
+  var rl = require('readline').createInterface({
     input: process.stdin,
     output: process.stdout
   });
+  rl.clearLine(process.stdin);
 
   var foldersTaken = [];
   var namesTaken = [];
@@ -443,6 +443,7 @@ Install.prototype.resolveConflict = function(botToInstallJson, hasFolderProblem,
   }
 
   function end() {
+    rl.clearLine(process.stdin);
     rl.close();
 
     if(hasToAddBot) {
@@ -495,7 +496,12 @@ Install.prototype.copyTempBotToFinalDestination = function(botToInstallJson) {
     this.logInfo('No configuration to setup');
   }
   else {
-    this.launchSetupConfiguration(botToInstallJson);
+    if(this.lstatSync(this.rootFolder + '/configurations/' + botToInstallJson.bot_folder + '/configuration.json') === false) {
+      this.launchSetupConfiguration(botToInstallJson, 'create');
+    }
+    else {
+      this.resolveConflictConfiguration(botToInstallJson);
+    }
   }
 };
 
@@ -542,7 +548,7 @@ Install.prototype.lstatSync = function(path) {
   }
 };
 
-Install.prototype.launchSetupConfiguration = function(botToInstallJson) {
+Install.prototype.launchSetupConfiguration = function(botToInstallJson, modificationType) {
   if(botToInstallJson.configuration.name === undefined) {
     this.stopProcess('Name missing in configuration file');
   }
@@ -551,11 +557,24 @@ Install.prototype.launchSetupConfiguration = function(botToInstallJson) {
     input: process.stdin,
     output: process.stdout
   });
-  
+  rl.clearLine(process.stdin);
+
+  var that = this;
   var i = 0;
   var len = 0;
   var propsKeys = [];
   var propsValues = [];
+  var configurationFileJson = [];
+  var lenConfs = 0;
+  var nameConfTaken = [];
+
+  if(modificationType === 'add') {
+    configurationFileJson = JSON.parse(that.fs.readFileSync(that.rootFolder + '/configurations/' + botToInstallJson.bot_folder + '/configuration.json'));
+    lenConfs = configurationFileJson.length;
+    for(i = 0; i < lenConfs; i++) {
+      nameConfTaken.push(lenConfs.name);
+    }
+  }
 
   function setConfigurationValue() {
     if(i >= len) {
@@ -568,7 +587,27 @@ Install.prototype.launchSetupConfiguration = function(botToInstallJson) {
       question = 'Value for ' + propsKeys[i] + ' (separate words with space) ? ';
     }
     
+    if(propsKeys[i] === 'name' && modificationType === 'add' && nameConfTaken.length > 0) {
+      console.log('List of name already taken: ' + nameConfTaken.join(' , '));
+    }
+    
     rl.question(question, function(answer){
+      if(propsKeys[i] === 'name') {
+        answer = answer.trim();
+        if(answer.length < 1) {
+          console.log('Name is required and must be unique');
+          i--;
+          setConfigurationValue();
+          return;
+        }
+        else if(nameConfTaken.indexOf(answer) !== -1) {
+          console.log('Name must be unique');
+          i--;
+          setConfigurationValue();
+          return;
+        }
+      }
+      
       if(propsValues[i] === 'string') {
         configuration[propsKeys[i]] = answer.trim();
       }
@@ -582,18 +621,76 @@ Install.prototype.launchSetupConfiguration = function(botToInstallJson) {
 
   var configuration = botToInstallJson.configuration;
   for(var key in botToInstallJson.configuration) {
-    propsKeys.push(key);
-    propsValues.push(botToInstallJson.configuration[key]);
-    len++;
+    if(botToInstallJson.configuration.hasOwnProperty(key)) {
+      propsKeys.push(key);
+      propsValues.push(botToInstallJson.configuration[key]);
+      len++;
+    }
   }
-  
+
   function end() {
-    console.log(configuration);
+    rl.clearLine(process.stdin);
     rl.close();
-    return;
+    configurationFileJson.push(configuration);
+    that.fs.writeFileSync(that.rootFolder + '/configurations/' + botToInstallJson.bot_folder + '/configuration.json', JSON.stringify(configurationFileJson), 'utf8');
+    that.endInstall();
+  }
+
+  function blockReadline() {
+    rl.question('You are going to Setup configuration file: are you ready ? (y/n)', function (answer) {
+      if (answer === 'y') {
+        setConfigurationValue();
+      }
+      else if (answer === 'n') {
+        that.endInstall();
+      }
+      else {
+        blockReadline();
+      }
+    });
   }
   
-  setConfigurationValue();
+  console.log('Setup Configuration');
+  blockReadline();
+};
+
+Install.prototype.resolveConflictConfiguration = function(botToInstallJson) {
+  var rl = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+  rl.clearLine(process.stdin);
+
+  var that = this;
+
+  function ask() {
+    rl.question('A configuration file is already present, do you want to erase (e) file or add (a) a configuration or quit (q) ? (e/a/q) ', function (answer) {
+      if(answer === 'a') {
+        rl.clearLine(process.stdin);
+        rl.close();
+        that.launchSetupConfiguration(botToInstallJson, 'add');
+      }
+      else if(answer === 'e') {
+        rl.clearLine(process.stdin);
+        rl.close();
+        that.launchSetupConfiguration(botToInstallJson, 'erase');
+      }
+      else if(answer === 'q') {
+        rl.close();
+        that.endInstall();
+      }
+      else {
+        ask();
+      }
+    });
+  }
+
+  ask();
+};
+
+Install.prototype.endInstall = function() {
+  this.logInfo('Done');
+  process.exit(0);
 };
 
 Install.prototype.logInfo = function(string) {
