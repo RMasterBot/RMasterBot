@@ -532,7 +532,7 @@ Install.prototype.copyFilesRecursive = function(srcPath, destPath, depth) {
         that.copyFilesRecursive(newSrcPath, newDestPath, depth);
       }
       else {
-        var fileData = that.fs.readFileSync(newSrcPath);
+        var fileData = that.fs.readFileSync(newSrcPath, 'utf8');
         that.fs.writeFileSync(newDestPath, fileData);
       }
     });
@@ -569,12 +569,13 @@ Install.prototype.launchSetupConfiguration = function(botToInstallJson, modifica
   var nameConfTaken = [];
 
   if(modificationType === 'add') {
-    configurationFileJson = JSON.parse(that.fs.readFileSync(that.rootFolder + '/configurations/' + botToInstallJson.bot_folder + '/configuration.json'));
+    configurationFileJson = JSON.parse(that.fs.readFileSync(that.rootFolder + '/configurations/' + botToInstallJson.bot_folder + '/configuration.json', 'utf8'));
     lenConfs = configurationFileJson.length;
     for(i = 0; i < lenConfs; i++) {
-      nameConfTaken.push(lenConfs.name);
+      nameConfTaken.push(configurationFileJson[i].name);
     }
   }
+  i = 0;
 
   function setConfigurationValue() {
     if(i >= len) {
@@ -596,18 +597,21 @@ Install.prototype.launchSetupConfiguration = function(botToInstallJson, modifica
         answer = answer.trim();
         if(answer.length < 1) {
           console.log('Name is required and must be unique');
-          i--;
           setConfigurationValue();
           return;
         }
         else if(nameConfTaken.indexOf(answer) !== -1) {
           console.log('Name must be unique');
-          i--;
           setConfigurationValue();
           return;
         }
       }
-      
+
+      if(answer === "string" || answer === "array") {
+        setConfigurationValue();
+        return;
+      }
+
       if(propsValues[i] === 'string') {
         configuration[propsKeys[i]] = answer.trim();
       }
@@ -629,6 +633,12 @@ Install.prototype.launchSetupConfiguration = function(botToInstallJson, modifica
   }
 
   function end() {
+    console.log(configuration.name);
+    if(configuration.name === "string") {
+      i = 0;
+      setConfigurationValue();
+      return;
+    }
     rl.clearLine(process.stdin);
     rl.close();
     configurationFileJson.push(configuration);
@@ -636,22 +646,8 @@ Install.prototype.launchSetupConfiguration = function(botToInstallJson, modifica
     that.endInstall();
   }
 
-  function blockReadline() {
-    rl.question('You are going to Setup configuration file: are you ready ? (y/n)', function (answer) {
-      if (answer === 'y') {
-        setConfigurationValue();
-      }
-      else if (answer === 'n') {
-        that.endInstall();
-      }
-      else {
-        blockReadline();
-      }
-    });
-  }
-  
   console.log('Setup Configuration');
-  blockReadline();
+  setConfigurationValue();
 };
 
 Install.prototype.resolveConflictConfiguration = function(botToInstallJson) {
