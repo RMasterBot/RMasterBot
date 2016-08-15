@@ -1,4 +1,6 @@
 global.download = function download(url, dest, callback, retry) {
+  var log = require('npmlog');
+
   log.info('RMasterBot', 'Download %s to %s', url, dest);
   var wrapper;
   retry = retry || 0;
@@ -13,11 +15,11 @@ global.download = function download(url, dest, callback, retry) {
     log.error('RMasterBot', 'Url not supported for download: %s', url);
     return;
   }
-  var fs = require('fs');
 
+  var fs = require('fs');
   var file = fs.createWriteStream(dest);
   var request = wrapper.get(url, function(response) {
-    if(response.statusCode === 404) {
+    if(response.statusCode >= 400) {
       retry++;
 
       if(retry > 3) {
@@ -30,12 +32,15 @@ global.download = function download(url, dest, callback, retry) {
       setTimeout(function(){
         download(url, dest, callback, retry);
       }, 1000);
+
       return;
     }
+
     response.pipe(file);
     file.on('finish', function() {
       file.close(callback);
     });
+
   }).on('error', function(err) {
     fs.unlink(dest);
     if (callback) {

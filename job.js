@@ -6,6 +6,8 @@ function Job() {
   this.job = null;
   this.rootFolder = __dirname;
   this.arguments = [];
+  this.botFolder = null;
+  this.foldersToLoad = ['applications', 'models'];
 
   this.global = {
     app : null,
@@ -16,12 +18,16 @@ function Job() {
   this.jobFile = null;
 
   this.getArguments();
-  this.getBot();
+  this.getBotFolder();
   
   this.logInfo('Search job: ' + this.job);
   
   this.foundPrivateJob();
   this.foundJob();
+
+  this.loadCore();
+  this.loadBot();
+
   this.launchJob();
 }
 
@@ -86,7 +92,7 @@ Job.prototype.showHelp = function() {
   process.exit(1);
 };
 
-Job.prototype.getBot = function() {
+Job.prototype.getBotFolder = function() {
   if(this.lstatSync(this.rootFolder + '/bots.json') === false) {
     this.stopProcess('No bots installed');
   }
@@ -133,6 +139,42 @@ Job.prototype.foundJob = function() {
       this.jobFile = jobsFolder + files[i];
       break;
     }
+  }
+};
+
+Job.prototype.loadCore = function() {
+  var files;
+  var lenFiles;
+  var i;
+
+  files = this.fs.readdirSync(this.rootFolder + '/core/');
+  lenFiles = files.length;
+  for(i = 0; i < lenFiles; i++) {
+    console.log(this.rootFolder + '/core/' + files[i]);
+    require(this.rootFolder + '/core/' + files[i]);
+  }
+};
+
+Job.prototype.loadBot = function() {
+  var len = this.foldersToLoad.length;
+  var i;
+  
+  for(i = 0; i < len; i++) {
+    this.loadFiles(this.foldersToLoad[i]);
+  }
+};
+
+Job.prototype.loadFiles = function(folder) {
+  var dirpath = this.rootFolder + '/' + folder + '/' + this.botFolder + '/';
+  var files;
+  var lenFiles;
+  var i;
+  
+  files = this.fs.readdirSync(dirpath);
+  lenFiles = files.length;
+  for(i = 0; i < lenFiles; i++) {
+    console.log(dirpath + files[i]);
+    require(dirpath + files[i]);
   }
 };
 
