@@ -2,7 +2,7 @@
   "name": "rmasterbot",
   "version": "1.0.0",
   "description": "RMasterBot",
-  "main": "install.js",
+  "main": "rmasterbot.js",
   "directories": {
     "doc": "docs"
   },
@@ -19,6 +19,11 @@
     "url": "https://github.com/rancoud/RMasterBot/issues"
   },
   "homepage": "https://github.com/rancoud/RMasterBot#readme",
+  "dependencies": {
+    "colors": "^1.1.2",
+    "npmlog": "^4.0.0",
+    "yauzl": "^2.6.0"
+  },
   "devDependencies": {
     "colors": "^1.1.2",
     "npmlog": "^4.0.0",
