@@ -60,3 +60,8 @@ RMasterBot.prototype.stopProcess = function(exception) {
 };
 
 exports.RMasterBot = RMasterBot;
+
+exports.getApplication = function getApplication() {
+  // une factory
+  // faire le truc du job avec une vzariable globale
+};
