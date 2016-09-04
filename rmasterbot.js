@@ -1,30 +1,40 @@
 function RMasterBot(bot, configuration) {
-  this.log = require('npmlog');
   this.fs = require('fs');
+  this.corePath = __dirname + '/core';
 
+  this.bot = null;
   this.bots = [];
   this.botFile = __dirname + '/bots.json';
   this.botSelectedIndex = null;
 
+  this.loadCore();
+
   this.getBotsInstalled();
 
   if(bot !== undefined) {
-    this.getApplication(bot, configuration);
+    this.getBot(bot, configuration);
   }
 }
 
+RMasterBot.prototype.loadCore = function(){
+  require(this.corePath + '/bot.js');
+};
+
 RMasterBot.prototype.getBotsInstalled = function(){
   if(this.lstatSync(this.botFile) === false) {
-    this.stopProcess('No Bots installed!');
+    throw 'No Bots installed!';
   }
 
   this.bots = JSON.parse(this.fs.readFileSync(this.botFile, 'utf-8'));
 };
 
-RMasterBot.prototype.getApplication = function(bot, configuration){
+RMasterBot.prototype.getBot = function(bot, configuration){
   if(this.isBotExist(bot) === false) {
-    this.stopProcess('No bot ' + bot + ' found');
+    throw 'No bot ' + bot + ' found';
   }
+
+  var app = require(__dirname + '/applications/' + this.bots[this.botSelectedIndex].bot_folder + '/test.js');
+  this.bot = new app.Toto();
 };
 
 RMasterBot.prototype.isBotExist = function(bot) {
@@ -50,18 +60,23 @@ RMasterBot.prototype.lstatSync = function(path) {
   }
 };
 
-RMasterBot.prototype.logInfo = function(string) {
-  this.log.info('RMasterBot', string);
+module.exports.getBotsInstalled = function getBotsInstalled() {
+  return new RMasterBot().bots;
 };
 
-RMasterBot.prototype.stopProcess = function(exception) {
-  this.log.error('RMasterBot', exception);
-  process.exit(-1);
+module.exports.getAllBots = function getAllBots() {
+  var botsInstalled = new RMasterBot().bots;
+  var bots = [];
+  var i = 0;
+  var maxBotsInstalled = botsInstalled.length;
+
+  for(; i < maxBotsInstalled; i++) {
+    bots.push(new RMasterBot(botsInstalled[i].bot_name).bot);
+  }
+
+  return bots;
 };
 
-exports.RMasterBot = RMasterBot;
-
-exports.getApplication = function getApplication() {
-  // une factory
-  // faire le truc du job avec une vzariable globale
+module.exports.getBot = function getBot(bot, configuration) {
+  return new RMasterBot(bot, configuration).bot;
 };
