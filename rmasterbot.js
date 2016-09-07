@@ -33,8 +33,8 @@ RMasterBot.prototype.getBot = function(bot, configuration){
     throw 'No bot ' + bot + ' found';
   }
 
-  var app = require(__dirname + '/applications/' + this.bots[this.botSelectedIndex].bot_folder + '/test.js');
-  this.bot = new app.Toto();
+  var app = require(__dirname + '/applications/' + this.bots[this.botSelectedIndex].bot_folder + '/pinterest.js');
+  this.bot = new app();
 };
 
 RMasterBot.prototype.isBotExist = function(bot) {
