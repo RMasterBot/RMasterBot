@@ -1,9 +1,22 @@
+var Request = require(__dirname + '/request.js');
+
 function Bot(){
   this.name = null;
   this.folder = null;
   this.domainApi = null;
   this.configuration = {};
+
+  this.validHTTPMethods = ["GET","POST","PUT","PATCH","DELETE","HEAD","OPTIONS","COPY",
+    "CONNECT","TRACE","LINK","UNLINK","PURGE","LOCK","UNLOCK","PROPFIND","VIEW"];
+  this.defaultValues = {
+    port: 80,
+    path: "/",
+    pathPrefix: ""
+  };
 }
+
+Bot.prototype = new Request();
+Bot.prototype.constructor = Bot;
 
 Bot.prototype.getName = function() {
   return this.name;
@@ -35,15 +48,6 @@ Bot.prototype.updateRateLimit = function(remainingRateLimit) {
 
     saveRateLimitByName(this.getAppName(), JSON.stringify(rateLimitApp));
   }
-};
-
-// todo / a voir si on garde
-Bot.prototype.addParameters = function(parameters) {
-  var queries = [];
-  for(var parameter in parameters) {
-    queries.push(parameter + '=' + encodeURIComponent(parameters[parameter]));
-  }
-  return queries.join('&');
 };
 
 // todo / implement
@@ -91,143 +95,6 @@ Bot.prototype.getAccessToken = function(code, callback) {
   req.on('error', function(e) {
     callback(e, false);
   });*/
-};
-
-/*
-* parameters {
-*   method:"get",
-*   uri:"/api/1.0/user",
-*   dns:"dns",
-*   port: 80,
-*   headers:[],
-*   get:[{key:value}],
-*   post:[{key:value}],
-*   files:[{key:value}]
-* }
-* callback function(error, data){};
-* */
-Bot.prototype.requestApi = function(parameters, callback) {
-  var that = this;
-
-  var fs = require('fs');
-  var endl = "\r\n";
-  var length = 0;
-  var contentType = '';
-  var files = [];
-  var boundary = '-----np' + Math.random();
-  var toWrite = [];
-
-  if (filepath !== undefined) {
-    files.push(
-      {
-        param: "image",
-        path: filepath,
-        length: 0
-      }
-    );
-
-    var name = '', stats;
-    for (var idxFiles in files) {
-      if (fs.existsSync(files[idxFiles].path)) {
-        name = files[idxFiles].path.replace(/\\/g,'/').replace( /.*\//, '' );
-
-        stats = fs.statSync(files[idxFiles].path);
-        files[idxFiles].length = stats.size;
-
-        toWrite.push('--' + boundary + endl);
-        toWrite.push('Content-Disposition: form-data; name="image"; filename="' + name + '"' + endl);
-        toWrite.push(endl);
-        toWrite.push(files[idxFiles]);
-      }
-    }
-
-    toWrite.push('--' + boundary + '--' + endl);
-
-    for(var idxToWrite in toWrite) {
-      length += toWrite[idxToWrite].length;
-    }
-
-    contentType = 'multipart/form-data; boundary=' + boundary;
-  }
-
-  var options = {
-    hostname: this.domainApi,
-    port: 443,
-    path: '/v1/' + uri,
-    method: parameters.method,
-    headers: {}
-  };
-
-  if(contentType !== '') {
-    options.headers['Content-Type'] = contentType;
-  }
-
-  if(length !== 0) {
-    options.headers['Content-Length'] = length;
-  }
-
-  var req = that.https.request(options, function(res) {
-    var data = '';
-    res.on('data', function(chunkData) {
-      data+= chunkData;
-    });
-
-    res.on('end', function() {
-      if(res.statusCode === 200 || res.statusCode === 201) {
-        that.updateRateLimit(res.headers['x-ratelimit-remaining']);
-        callback(false, data);
-      }
-      else {
-        that.updateRateLimit(res.headers['x-ratelimit-remaining']);
-        callback(JSON.parse(data), false);
-      }
-    });
-  });
-
-  if (files.length > 0) {
-    var indexToWrite = 0;
-    var lengthToWrite = toWrite.length;
-
-    function writeAsyncBody(req, toWrite, indexToWrite) {
-      if(lengthToWrite == indexToWrite) {
-        req.end();
-        return;
-      }
-
-      if (typeof(toWrite[indexToWrite]) == 'string') {
-        req.write(toWrite[indexToWrite]);
-        indexToWrite++;
-        writeAsyncBody(req, toWrite, indexToWrite);
-      }
-      else {
-        var stream = fs.createReadStream(toWrite[indexToWrite].path);
-
-        stream.on('error', function(error) {
-          throw new Error(error.message);
-        });
-
-        stream.on('data', function(data) {
-          req.write(data);
-        });
-
-        stream.on('end', function() {
-          req.write(endl);
-          indexToWrite++;
-          writeAsyncBody(req, toWrite, indexToWrite);
-        });
-      }
-    }
-
-    writeAsyncBody(req, toWrite, indexToWrite);
-  }
-  else {
-    req.end();
-  }
-
-  req.on('error', function(e) {
-    console.log('error call api v1');
-    callback(e, false);
-  });
 };
 
 // todo / implement
