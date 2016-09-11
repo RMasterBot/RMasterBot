@@ -10,19 +10,21 @@ function Request(){
 }
 
 Request.prototype.checkParameterMethodForRequestApi = function (parameters) {
+  var idx;
+
   if(typeof parameters.method !== "string") {
-    throw "method not a string";
+    throw this.RError("REQ-001", "method not a string", __filename, 16);
   }
 
   parameters.method = parameters.method.trim().toUpperCase();
 
   if(parameters.method.length < 1) {
-    throw "method empty";
+    throw this.RError("REQ-002", "method empty", __filename, 22);
   }
 
-  var idx = this.validHTTPMethods.indexOf(parameters.method);
+  idx = this.validHTTPMethods.indexOf(parameters.method);
   if(idx === -1) {
-    throw "method invalid";
+    throw this.RError("REQ-003", "method invalid", __filename, 27);
   }
 
   return this.validHTTPMethods[idx];
@@ -34,14 +36,14 @@ Request.prototype.checkParameterPathForRequestApi = function (parameters) {
 
   if(parameters.path !== undefined) {
     if(typeof parameters.path !== "string") {
-      throw "path not a string";
+      throw this.RError("REQ-004", "path not a string", __filename, 39);
     }
     path = parameters.path.trim();
   }
 
   if(parameters.pathPrefix !== undefined) {
     if(typeof parameters.pathPrefix !== "string") {
-      throw "pathPrefix not a string";
+      throw this.RError("REQ-005", "pathPrefix not a string", __filename, 46);
     }
     prefix = parameters.pathPrefix.trim();
   }
@@ -51,13 +53,13 @@ Request.prototype.checkParameterPathForRequestApi = function (parameters) {
 
 Request.prototype.checkParameterHostnameForRequestApi = function (parameters) {
   if(typeof parameters.hostname !== "string") {
-    throw "hostname not a string";
+    throw this.RError("REQ-006", "hostname not a string", __filename, 56);
   }
 
   parameters.hostname = parameters.hostname.trim();
 
   if(parameters.hostname.length < 1) {
-    throw "hostname empty";
+    throw this.RError("REQ-007", "hostname empty", __filename, 62);
   }
 
   return parameters.hostname;
@@ -69,30 +71,74 @@ Request.prototype.checkParameterPortForRequestApi = function (parameters) {
   }
 
   if(typeof parameters.port !== "number") {
-    throw "port not a number";
+    throw this.RError("REQ-008", "port not a number", __filename, 74);
   }
 
   if(parameters.port < 0 || parameters.port > 65535) {
-    throw "port invalid";
+    throw this.RError("REQ-009", "port invalid", __filename, 78);
   }
 
   return parameters.port;
 };
 
 Request.prototype.checkParameterHeadersForRequestApi = function (parameters) {
-  return [];
+  if(parameters.headers === undefined) {
+    return [];
+  }
+
+  if (!parameters.headers instanceof Array) {
+    throw this.RError("REQ-010", "headers invalid", __filename, 90);
+  }
+
+  return parameters.headers;
 };
 
 Request.prototype.checkParameterGetForRequestApi = function (parameters) {
-  return [];
+  if(parameters.get === undefined) {
+    return [];
+  }
+
+  if (!parameters.get instanceof Object) {
+    throw this.RError("REQ-011", "get invalid", __filename, 102);
+  }
+
+  return parameters.get;
 };
 
 Request.prototype.checkParameterPostForRequestApi = function (parameters) {
-  return [];
+  if(parameters.post === undefined) {
+    return [];
+  }
+
+  if (!parameters.post instanceof Object) {
+    throw this.RError("REQ-012", "post invalid", __filename, 114);
+  }
+
+  return parameters.post;
 };
 
 Request.prototype.checkParameterFilesForRequestApi = function (parameters) {
-  return [];
+  if(parameters.files === undefined) {
+    return [];
+  }
+
+  if (!parameters.files instanceof Object) {
+    throw this.RError("REQ-013", "files invalid", __filename, 126);
+  }
+
+  return parameters.files;
+};
+
+Request.prototype.checkParameterAuthForRequestApi = function (parameters) {
+  if(parameters.auth === undefined) {
+    return "";
+  }
+
+  if (typeof parameters.auth !== "string") {
+    throw this.RError("REQ-014", "auth (basic) invalid", __filename, 138);
+  }
+
+  return parameters.auth;
 };
 
 Request.prototype.formatParametersForRequestApi = function (parameters) {
@@ -104,31 +150,43 @@ Request.prototype.formatParametersForRequestApi = function (parameters) {
     headers: this.checkParameterHeadersForRequestApi(parameters),
     get: this.checkParameterGetForRequestApi(parameters),
     post: this.checkParameterPostForRequestApi(parameters),
-    files: this.checkParameterFilesForRequestApi(parameters)
+    files: this.checkParameterFilesForRequestApi(parameters),
+    auth: this.checkParameterAuthForRequestApi(parameters)
   }
 };
 
 Request.prototype.transformParameterGet = function(values) {
   var queries = [];
-  for(var key in values) {
-    queries.push(key + '=' + encodeURIComponent(values[key]));
+  var key;
+
+  for (key in values) {
+    if (values.hasOwnProperty(key)) {
+      queries.push(key + '=' + encodeURIComponent(values[key]));
+    }
   }
+
   return "?" + queries.join('&');
 };
 
 Request.prototype.transformParameterHeader = function(values) {
   var headers = {};
-  for(var key in values) {
-    headers[key] = values[key];
+  var key;
+
+  for (key in values) {
+    if (values.hasOwnProperty(key)) {
+      headers[key] = values[key];
+    }
   }
+
   return headers;
 };
 
 Request.prototype.requestApi = function(parameters, callback) {
   var that = this;
-  console.log(parameters);
+  var postData;
+  //console.log(parameters);
   parameters = this.formatParametersForRequestApi(parameters);
-  console.log(parameters);
+  //console.log(parameters);
 
   var options = {
     hostname: parameters.hostname,
@@ -138,6 +196,17 @@ Request.prototype.requestApi = function(parameters, callback) {
     headers: this.transformParameterHeader(parameters.headers)
   };
 
+  if(parameters.auth.length > 0) {
+    options.auth = parameters.auth;
+  }
+
+  postData = require('querystring').stringify(parameters.post);
+
+  if(Object.keys(parameters.post).length > 0) {
+    options.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+    options.headers['Content-Length'] = Buffer.byteLength(postData);
+  }
+console.log(options);
   var req = require('http').request(options, function(res) {
     var data = '';
     res.on('data', function(chunkData) {
@@ -145,11 +214,14 @@ Request.prototype.requestApi = function(parameters, callback) {
     });
 
     res.on('end', function() {
+      console.log("----");
       console.log(res.statusCode);
+      console.log("----");
       console.log(data);
     });
 
   });
+  req.write(postData);
   req.end();
   /*
 
@@ -274,6 +346,11 @@ Request.prototype.requestApi = function(parameters, callback) {
    callback(e, false);
    });
    */
+};
+
+Request.prototype.RError = function(code, message, file, lineNumber) {
+  var _RError = require(__dirname + '/rerror.js');
+  return new _RError(code, message, file, lineNumber);
 };
 
 module.exports = Request;
