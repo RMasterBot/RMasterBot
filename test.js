@@ -1,5 +1,4 @@
 var rmasterbot = require('./rmasterbot');
-
 // request url with params
 
 pinterestBotNoConf = rmasterbot.getBot('pinterest');
@@ -13,11 +12,14 @@ var params = {
   method: "GET",
   path: "/pins/",
   hostname: "sandbox.dev",
-/*  headers: [{"livecoding":"pietro"}],
-  get: [{"toto":"gaga"}],
-  post: [{"micheline":"zombie"}],
-  files: [{"zut":__filename}]*/
+  headers: {"livecoding":"pietro","rrrr":"ttttt"},
+  get: {"toto":"gaga","uuu":"yyyy yéùà"},
+  post: {"michelinebjh":"zombie","miche":"bbbbbb"},
+  files: {"zut":__filename,"oooo":"jjjjj"},
+  auth: "aze:rty"
 };
+///params.get.toto = "oui";
+///params.get.push({"totaaao":"oui"});
 pinterestBotNoConf.requestApi(params, callback);
 
 return;

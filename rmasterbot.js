@@ -80,3 +80,8 @@ module.exports.getAllBots = function getAllBots() {
 module.exports.getBot = function getBot(bot, configuration) {
   return new RMasterBot(bot, configuration).bot;
 };
+
+module.exports.RError = function RError(code, message, file, lineNumber) {
+  var _RError = require(__dirname + '/core/rerror.js');
+  return new _RError(code, message, file, lineNumber);
+};

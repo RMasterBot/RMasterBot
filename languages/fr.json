@@ -1,0 +1,19 @@
+{
+  "Error Code": "Corde d'Erreur",
+  "File": "Fichier",
+  "Line": "Ligne",
+  "method not a string": "method n'est pas une chaine",
+  "method empty": "method vide",
+  "method invalid": "method invalide",
+  "path not a string": "path n'est pas une chaine",
+  "pathPrefix not a string": "pathPrefix n'est pas une chaine",
+  "hostname not a string": "hostname n'est pas une chaine",
+  "hostname empty": "hostname vide",
+  "port not a number": "port n'est pas un nombre",
+  "port invalid": "port invalide",
+  "headers invalid": "headers invalide",
+  "get invalid": "get invalide",
+  "post invalid": "post invalide",
+  "files invalid": "files invalide",
+  "auth (basic) invalid": "auth (basic) invalide"
+}
