@@ -9,13 +9,13 @@ var callback = function callback(error, data) {
   console.log(data);
 };
 var params = {
-  method: "GET",
+  method: "POST",
   path: "/pins/",
   hostname: "sandbox.dev",
   headers: {"livecoding":"pietro","rrrr":"ttttt"},
   get: {"toto":"gaga","uuu":"yyyy yéùà"},
   post: {"michelinebjh":"zombie","miche":"bbbbbb"},
-  files: {"zut":__filename,"oooo":"jjjjj"},
+  files: {"zut":__filename,"oooo":__filename},
   auth: "aze:rty"
 };
 ///params.get.toto = "oui";

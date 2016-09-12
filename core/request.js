@@ -5,7 +5,8 @@ function Request(){
   this.defaultValues = {
     port: 80,
     path: "/",
-    pathPrefix: ""
+    pathPrefix: "",
+    httpModule: "http"
   };
 }
 
@@ -13,18 +14,18 @@ Request.prototype.checkParameterMethodForRequestApi = function (parameters) {
   var idx;
 
   if(typeof parameters.method !== "string") {
-    throw this.RError("REQ-001", "method not a string", __filename, 16);
+    throw this.RError("REQ-001", "method not a string", __filename, 17);
   }
 
   parameters.method = parameters.method.trim().toUpperCase();
 
   if(parameters.method.length < 1) {
-    throw this.RError("REQ-002", "method empty", __filename, 22);
+    throw this.RError("REQ-002", "method empty", __filename, 23);
   }
 
   idx = this.validHTTPMethods.indexOf(parameters.method);
   if(idx === -1) {
-    throw this.RError("REQ-003", "method invalid", __filename, 27);
+    throw this.RError("REQ-003", "method invalid", __filename, 28);
   }
 
   return this.validHTTPMethods[idx];
@@ -36,14 +37,14 @@ Request.prototype.checkParameterPathForRequestApi = function (parameters) {
 
   if(parameters.path !== undefined) {
     if(typeof parameters.path !== "string") {
-      throw this.RError("REQ-004", "path not a string", __filename, 39);
+      throw this.RError("REQ-004", "path not a string", __filename, 40);
     }
     path = parameters.path.trim();
   }
 
   if(parameters.pathPrefix !== undefined) {
     if(typeof parameters.pathPrefix !== "string") {
-      throw this.RError("REQ-005", "pathPrefix not a string", __filename, 46);
+      throw this.RError("REQ-005", "pathPrefix not a string", __filename, 47);
     }
     prefix = parameters.pathPrefix.trim();
   }
@@ -53,13 +54,13 @@ Request.prototype.checkParameterPathForRequestApi = function (parameters) {
 
 Request.prototype.checkParameterHostnameForRequestApi = function (parameters) {
   if(typeof parameters.hostname !== "string") {
-    throw this.RError("REQ-006", "hostname not a string", __filename, 56);
+    throw this.RError("REQ-006", "hostname not a string", __filename, 57);
   }
 
   parameters.hostname = parameters.hostname.trim();
 
   if(parameters.hostname.length < 1) {
-    throw this.RError("REQ-007", "hostname empty", __filename, 62);
+    throw this.RError("REQ-007", "hostname empty", __filename, 63);
   }
 
   return parameters.hostname;
@@ -71,11 +72,11 @@ Request.prototype.checkParameterPortForRequestApi = function (parameters) {
   }
 
   if(typeof parameters.port !== "number") {
-    throw this.RError("REQ-008", "port not a number", __filename, 74);
+    throw this.RError("REQ-008", "port not a number", __filename, 75);
   }
 
   if(parameters.port < 0 || parameters.port > 65535) {
-    throw this.RError("REQ-009", "port invalid", __filename, 78);
+    throw this.RError("REQ-009", "port invalid", __filename, 79);
   }
 
   return parameters.port;
@@ -83,11 +84,11 @@ Request.prototype.checkParameterPortForRequestApi = function (parameters) {
 
 Request.prototype.checkParameterHeadersForRequestApi = function (parameters) {
   if(parameters.headers === undefined) {
-    return [];
+    return {};
   }
 
   if (!parameters.headers instanceof Array) {
-    throw this.RError("REQ-010", "headers invalid", __filename, 90);
+    throw this.RError("REQ-010", "headers invalid", __filename, 91);
   }
 
   return parameters.headers;
@@ -95,11 +96,11 @@ Request.prototype.checkParameterHeadersForRequestApi = function (parameters) {
 
 Request.prototype.checkParameterGetForRequestApi = function (parameters) {
   if(parameters.get === undefined) {
-    return [];
+    return {};
   }
 
   if (!parameters.get instanceof Object) {
-    throw this.RError("REQ-011", "get invalid", __filename, 102);
+    throw this.RError("REQ-011", "get invalid", __filename, 103);
   }
 
   return parameters.get;
@@ -107,26 +108,47 @@ Request.prototype.checkParameterGetForRequestApi = function (parameters) {
 
 Request.prototype.checkParameterPostForRequestApi = function (parameters) {
   if(parameters.post === undefined) {
-    return [];
+    return {};
   }
 
   if (!parameters.post instanceof Object) {
-    throw this.RError("REQ-012", "post invalid", __filename, 114);
+    throw this.RError("REQ-012", "post invalid", __filename, 115);
   }
 
   return parameters.post;
 };
 
 Request.prototype.checkParameterFilesForRequestApi = function (parameters) {
+  var files = [];
+  var key;
+  var stats;
+
   if(parameters.files === undefined) {
-    return [];
+    return files;
   }
 
   if (!parameters.files instanceof Object) {
-    throw this.RError("REQ-013", "files invalid", __filename, 126);
+    throw this.RError("REQ-013", "files invalid", __filename, 131);
   }
 
-  return parameters.files;
+  try {
+    for (key in parameters.files) {
+      if(parameters.files.hasOwnProperty(key)) {
+        stats = require('fs').lstatSync(parameters.files[key]);
+        files.push({
+          "path": parameters.files[key],
+          "parameter": key,
+          "length": stats.size,
+          "name": parameters.files[key].replace(/\\/g,'/').replace( /.*\//, '' )
+        });
+      }
+    }
+  }
+  catch(e){
+    throw this.RError("REQ-014", "file not found", __filename, 148);
+  }
+
+  return files;
 };
 
 Request.prototype.checkParameterAuthForRequestApi = function (parameters) {
@@ -135,7 +157,7 @@ Request.prototype.checkParameterAuthForRequestApi = function (parameters) {
   }
 
   if (typeof parameters.auth !== "string") {
-    throw this.RError("REQ-014", "auth (basic) invalid", __filename, 138);
+    throw this.RError("REQ-015", "auth (basic) invalid", __filename, 160);
   }
 
   return parameters.auth;
@@ -183,12 +205,23 @@ Request.prototype.transformParameterHeader = function(values) {
 
 Request.prototype.requestApi = function(parameters, callback) {
   var that = this;
-  var postData;
-  //console.log(parameters);
-  parameters = this.formatParametersForRequestApi(parameters);
-  //console.log(parameters);
+  var options;
+  var postData = '';
 
-  var options = {
+  var endl = "\r\n";
+  var length = 0;
+  var boundary = '-----np' + Math.random();
+  var toWrite = [];
+  var stream;
+
+  var keyData;
+  var idxFile = 0;
+  var idxToWrite = 0;
+  var lengthToWrite;
+
+  parameters = this.formatParametersForRequestApi(parameters);
+
+  options = {
     hostname: parameters.hostname,
     port: parameters.port,
     path: parameters.path + this.transformParameterGet(parameters.get),
@@ -200,152 +233,116 @@ Request.prototype.requestApi = function(parameters, callback) {
     options.auth = parameters.auth;
   }
 
-  postData = require('querystring').stringify(parameters.post);
+  if (parameters.files.length > 0) {
+    for(keyData in parameters.post) {
+      if(parameters.post.hasOwnProperty(keyData)) {
+        toWrite.push('--' + boundary + endl);
+        toWrite.push('Content-Disposition: form-data; name="' + keyData + '"' + endl);
+        toWrite.push(endl);
+        toWrite.push(parameters.post[keyData] + endl);
+      }
+    }
 
-  if(Object.keys(parameters.post).length > 0) {
+    for (; idxFile < parameters.files.length; idxFile++) {
+      toWrite.push('--' + boundary + endl);
+      toWrite.push('Content-Disposition: form-data; name="' + parameters.files[idxFile].parameter + '"; filename="' + parameters.files[idxFile].name + '"' + endl);
+      toWrite.push(endl);
+      toWrite.push(parameters.files[idxFile]);
+    }
+
+    toWrite.push('--' + boundary + '--' + endl);
+
+    lengthToWrite = toWrite.length;
+    for(; idxToWrite < lengthToWrite; idxToWrite++) {
+      length += toWrite[idxToWrite].length;
+    }
+
+    options.headers['Content-Type'] = 'multipart/form-data; boundary=' + boundary;
+    options.headers['Content-Length'] = length;
+  }
+  else if(Object.keys(parameters.post).length > 0) {
+    postData = require('querystring').stringify(parameters.post);
     options.headers['Content-Type'] = 'application/x-www-form-urlencoded';
     options.headers['Content-Length'] = Buffer.byteLength(postData);
   }
-console.log(options);
-  var req = require('http').request(options, function(res) {
+
+  var req = require(this.defaultValues.httpModule).request(options, function(res) {
     var data = '';
+
     res.on('data', function(chunkData) {
       data+= chunkData;
     });
 
     res.on('end', function() {
+      var result = {
+        "statusCode": res.statusCode,
+        "headers": res.headers,
+        "data": data
+      };
+      callback(false, result);
+      /*if(res.statusCode === 200 || res.statusCode === 201) {
+        that.updateRateLimit(res.headers['x-ratelimit-remaining']);
+        callback(false, data);
+      }
+      else {
+        that.updateRateLimit(res.headers['x-ratelimit-remaining']);
+        callback(JSON.parse(data), false);
+      }*/
       console.log("----");
       console.log(res.statusCode);
       console.log("----");
       console.log(data);
     });
-
   });
-  req.write(postData);
-  req.end();
-  /*
 
-   return;
-   var fs = require('fs');
-   var endl = "\r\n";
-   var length = 0;
-   var contentType = '';
-   var files = [];
-   var boundary = '-----np' + Math.random();
-   var toWrite = [];
+  if (parameters.files.length > 0) {
+    idxToWrite = 0;
+    lengthToWrite = toWrite.length;
 
-   if (filepath !== undefined) {
-   files.push(
-   {
-   param: "image",
-   path: filepath,
-   length: 0
-   }
-   );
+    function writeAsyncBody(req, toWrite, idxToWrite) {
+      if(lengthToWrite == idxToWrite) {
+        req.end();
+        return;
+      }
 
-   var name = '', stats;
-   for (var idxFiles in files) {
-   if (fs.existsSync(files[idxFiles].path)) {
-   name = files[idxFiles].path.replace(/\\/g,'/').replace( /.*\//, '' );
+      if (typeof(toWrite[idxToWrite]) == 'string') {
+        req.write(toWrite[idxToWrite]);
+        idxToWrite++;
+        writeAsyncBody(req, toWrite, idxToWrite);
+      }
+      else {
+        stream = require('fs').createReadStream(toWrite[idxToWrite].path);
 
-   stats = fs.statSync(files[idxFiles].path);
-   files[idxFiles].length = stats.size;
+        stream.on('error', function(error) {
+          throw new Error(error.message);
+        });
 
-   toWrite.push('--' + boundary + endl);
-   toWrite.push('Content-Disposition: form-data; name="image"; filename="' + name + '"' + endl);
-   toWrite.push(endl);
-   toWrite.push(files[idxFiles]);
-   }
-   }
+        stream.on('data', function(data) {
+          req.write(data);
+        });
 
-   toWrite.push('--' + boundary + '--' + endl);
+        stream.on('end', function() {
+          req.write(endl);
+          idxToWrite++;
+          writeAsyncBody(req, toWrite, idxToWrite);
+        });
+      }
+    }
 
-   for(var idxToWrite in toWrite) {
-   length += toWrite[idxToWrite].length;
-   }
+    writeAsyncBody(req, toWrite, idxToWrite);
+  }
+  else if(postData.length > 0) {
+    req.write(postData);
+    req.end();
+  }
+  else {
+    req.end();
+  }
 
-   contentType = 'multipart/form-data; boundary=' + boundary;
-   }
-
-   var options = {
-   hostname: this.domainApi,
-   port: 443,
-   path: '/v1/' + uri,
-   method: parameters.method,
-   headers: {}
-   };
-
-   if(contentType !== '') {
-   options.headers['Content-Type'] = contentType;
-   }
-
-   if(length !== 0) {
-   options.headers['Content-Length'] = length;
-   }
-
-   var req = that.https.request(options, function(res) {
-   var data = '';
-   res.on('data', function(chunkData) {
-   data+= chunkData;
-   });
-
-   res.on('end', function() {
-   if(res.statusCode === 200 || res.statusCode === 201) {
-   that.updateRateLimit(res.headers['x-ratelimit-remaining']);
-   callback(false, data);
-   }
-   else {
-   that.updateRateLimit(res.headers['x-ratelimit-remaining']);
-   callback(JSON.parse(data), false);
-   }
-   });
-   });
-
-   if (files.length > 0) {
-   var indexToWrite = 0;
-   var lengthToWrite = toWrite.length;
-
-   function writeAsyncBody(req, toWrite, indexToWrite) {
-   if(lengthToWrite == indexToWrite) {
-   req.end();
-   return;
-   }
-
-   if (typeof(toWrite[indexToWrite]) == 'string') {
-   req.write(toWrite[indexToWrite]);
-   indexToWrite++;
-   writeAsyncBody(req, toWrite, indexToWrite);
-   }
-   else {
-   var stream = fs.createReadStream(toWrite[indexToWrite].path);
-
-   stream.on('error', function(error) {
-   throw new Error(error.message);
-   });
-
-   stream.on('data', function(data) {
-   req.write(data);
-   });
-
-   stream.on('end', function() {
-   req.write(endl);
-   indexToWrite++;
-   writeAsyncBody(req, toWrite, indexToWrite);
-   });
-   }
-   }
-
-   writeAsyncBody(req, toWrite, indexToWrite);
-   }
-   else {
-   req.end();
-   }
-
-   req.on('error', function(e) {
-   console.log('error call api v1');
-   callback(e, false);
-   });
-   */
+  req.on('error', function(e) {
+    console.log('error call api');
+    callback(e, false);
+  });
 };
 
 Request.prototype.RError = function(code, message, file, lineNumber) {
