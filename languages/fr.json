@@ -1,19 +1,19 @@
 {
-  "Error Code": "Corde d'Erreur",
-  "File": "Fichier",
-  "Line": "Ligne",
+  "Error Code": "Code d'Erreur",
   "method not a string": "method n'est pas une chaine",
   "method empty": "method vide",
-  "method invalid": "method invalide",
+  "method %s invalid": "method %s invalide",
   "path not a string": "path n'est pas une chaine",
   "pathPrefix not a string": "pathPrefix n'est pas une chaine",
   "hostname not a string": "hostname n'est pas une chaine",
   "hostname empty": "hostname vide",
   "port not a number": "port n'est pas un nombre",
-  "port invalid": "port invalide",
+  "port %s invalid, out of range 0 to 65535": "port %s invalide, en dehors de la plage 0 à 65535",
   "headers invalid": "headers invalide",
   "get invalid": "get invalide",
   "post invalid": "post invalide",
   "files invalid": "files invalide",
-  "auth (basic) invalid": "auth (basic) invalide"
+  "file not found: %s": "fichier introuvable : %s",
+  "auth (basic) invalid": "auth (basic) invalide",
+  "httpModule invalid: %s": "httpModule invalide : %s"
 }

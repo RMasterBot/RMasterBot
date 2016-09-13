@@ -1,11 +1,11 @@
 var rmasterbot = require('./rmasterbot');
 // request url with params
-
+/*
 pinterestBotNoConf = rmasterbot.getBot('pinterest');
 var callback = function callback(error, data) {
-  console.log('error');
+  console.log('error -> ');
   console.log(error);
-  console.log('data');
+  console.log('data -> ');
   console.log(data);
 };
 var params = {
@@ -16,13 +16,14 @@ var params = {
   get: {"toto":"gaga","uuu":"yyyy yéùà"},
   post: {"michelinebjh":"zombie","miche":"bbbbbb"},
   files: {"zut":__filename,"oooo":__filename},
-  auth: "aze:rty"
+  auth: "aze:rty",
+  httpModule:"https"
 };
 ///params.get.toto = "oui";
 ///params.get.push({"totaaao":"oui"});
 pinterestBotNoConf.requestApi(params, callback);
 
-return;
+return;*/
 
 // 0/ liste des bots installés
 //bots = rmasterbot.getBotsInstalled();
