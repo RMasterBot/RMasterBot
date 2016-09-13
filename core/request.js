@@ -151,7 +151,12 @@ Request.prototype.checkParameterFilesForRequestApi = function (parameters) {
     }
   }
   catch(e){
-    throw this.RError("REQ-014", "file not found: %s", parameters.files[key]);
+    if(key !== undefined) {
+      throw this.RError("REQ-014", "file not found: %s", parameters.files[key]);
+    }
+    else {
+      throw this.RError("REQ-015", "file error");
+    }
   }
 
   return files;
@@ -163,7 +168,7 @@ Request.prototype.checkParameterAuthForRequestApi = function (parameters) {
   }
 
   if (typeof parameters.auth !== "string") {
-    throw this.RError("REQ-015", "auth (basic) invalid");
+    throw this.RError("REQ-016", "auth (basic) invalid");
   }
 
   return parameters.auth;
@@ -175,7 +180,7 @@ Request.prototype.checkParameterHttpModuleForRequestApi = function (parameters) 
   }
 
   if (parameters.httpModule !== "http" && parameters.httpModule !== "https") {
-    throw this.RError("REQ-016", "httpModule invalid: %s", parameters.httpModule);
+    throw this.RError("REQ-017", "httpModule invalid: %s", parameters.httpModule);
   }
 
   return parameters.httpModule;
@@ -316,7 +321,7 @@ Request.prototype.requestApi = function(parameters, callback) {
         readStreamFile = require('fs').createReadStream(toWrite[idxToWrite].path);
 
         readStreamFile.on('error', function(error) {
-          throw that.RError("REQ-017", error.message);
+          throw that.RError("REQ-018", error.message);
         });
 
         readStreamFile.on('data', function(data) {

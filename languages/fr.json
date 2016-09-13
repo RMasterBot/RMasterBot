@@ -14,6 +14,7 @@
   "post invalid": "post invalide",
   "files invalid": "files invalide",
   "file not found: %s": "fichier introuvable : %s",
+  "file error": "erreur fichier",
   "auth (basic) invalid": "auth (basic) invalide",
   "httpModule invalid: %s": "httpModule invalide : %s"
 }
