@@ -3,16 +3,7 @@ var Request = require(__dirname + '/request.js');
 function Bot(){
   this.name = null;
   this.folder = null;
-  this.domainApi = null;
   this.configuration = {};
-
-  this.validHTTPMethods = ["GET","POST","PUT","PATCH","DELETE","HEAD","OPTIONS","COPY",
-    "CONNECT","TRACE","LINK","UNLINK","PURGE","LOCK","UNLOCK","PROPFIND","VIEW"];
-  this.defaultValues = {
-    port: 80,
-    path: "/",
-    pathPrefix: ""
-  };
 }
 
 Bot.prototype = new Request();
