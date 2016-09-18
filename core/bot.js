@@ -1,9 +1,23 @@
 var Request = require(__dirname + '/request.js');
 
-function Bot(){
-  this.name = null;
-  this.folder = null;
-  this.configuration = {};
+function Bot(name, folder, allConfigurations){
+  this.name = name;
+  this.folder = folder;
+
+  this.allConfigurations = allConfigurations || [];
+  this.currentConfiguration = {};
+  this.accessToken = {};
+
+  this.accessTokensFolder = __dirname + '/../access_tokens/' + this.folder + '/';
+  this.rateLimitsFolder = __dirname + '/../rate_limits/' + this.folder + '/';
+
+  this.useModels = true;
+
+  this.maxAttemptForDownload = 3;
+  this.delayBeforeNewAttemptDownload = 1000;
+
+  this.remainingRequest = 100;
+  this.remainingTime = 60*60;
 }
 
 Bot.prototype = new Request();
@@ -13,20 +27,190 @@ Bot.prototype.getName = function() {
   return this.name;
 };
 
+Bot.prototype.setName = function(name) {
+  this.name = name;
+};
+
 Bot.prototype.getFolder = function() {
   return this.folder;
 };
 
-Bot.prototype.getAppName = function() {
-  return this.configuration.name;
+Bot.prototype.setFolder = function(folder) {
+  this.folder = folder;
+};
+
+Bot.prototype.getCurrentConfigurationName = function() {
+  return this.currentConfiguration.name || "";
+};
+
+Bot.prototype.setCurrentConfiguration = function(configuration) {
+  this.currentConfiguration = configuration;
+};
+
+Bot.prototype.getCurrentConfiguration = function() {
+  return this.currentConfiguration;
+};
+
+Bot.prototype.setAllConfigurations = function(configurations) {
+  this.allConfigurations = configurations;
+};
+
+Bot.prototype.getAllConfigurations = function(configurations) {
+  return this.allConfigurations;
+};
+
+Bot.prototype.useConfigurationByName = function(configurationName) {
+  var i = 0;
+  var countConfigurations = this.allConfigurations.length;
+
+  for(; i < countConfigurations; i++) {
+    if(this.allConfigurations[i].name == configurationName) {
+      this.currentConfiguration = this.allConfigurations[i];
+      return;
+    }
+  }
+
+  throw this.RError('BOT-001', "Configuration named %s is not found", configurationName);
+};
+
+Bot.prototype.getUserAccessTokenFile = function(user) {
+  var filepath = this.accessTokensFolder + user + '.tok';
+  var fileContent;
+
+  if(this.isFileExist(filepath)) {
+    return JSON.parse(require('fs').readFileSync(filepath));
+  }
+  else {
+    throw this.RError('BOT-002', "Access Token File not found for user %s", user);
+  }
+};
+
+Bot.prototype.loadUserAccessToken = function(user) {
+  var accessTokens = this.getUserAccessTokenFile(user);
+  if(accessTokens.length > 0) {
+    this.accessToken = accessTokens[0];
+  }
+  else {
+    throw this.RError('BOT-003', "Access Token empty for user %s", user);
+  }
+};
+
+Bot.prototype.loadUserAccessTokenCompatible = function(user) {
+  var accessTokens = this.getUserAccessTokenFile(user);
+  var idx = 0;
+  var countAccessToken = accessTokens.length;
+  if(countAccessToken < 1) {
+    throw this.RError('BOT-003', "Access Token empty for user %s", user);
+  }
+
+  if(this.currentConfiguration.name === undefined) {
+    throw this.RError('BOT-004', "Configuration name is undefined");
+  }
+
+  for(; idx < countAccessToken; idx++) {
+    if(accessTokens[idx].configuration_name === this.currentConfiguration.name) {
+      this.accessToken = accessTokens[idx];
+      return;
+    }
+  }
+
+  throw this.RError('BOT-005', "Access Token incompatible for user %s and configuration %s", user, this.currentConfiguration.name);
+};
+
+Bot.prototype.enableModels = function() {
+  this.useModels = true;
+};
+
+Bot.prototype.disableModels = function() {
+  this.useModels = false;
 };
 
 Bot.prototype.setAccessToken = function(accessToken) {
-  this.configuration.access_token = accessToken;
+  this.accessToken = accessToken;
 };
 
-Bot.prototype.setScope = function(scope) {
-  this.configuration.scope = scope;
+Bot.prototype.getAuthorizeCodeUrl = function() {
+  throw this.RError('BOT-006', "Implement getAuthorizeCodeUrl");
+};
+
+Bot.prototype.getAccessTokenByUrl = function(code, callback) {
+  throw this.RError('BOT-007', "Implement getAccessTokenByUrl");
+};
+
+Bot.prototype.isUserAccessTokenCompatibleWithCurrentConfiguration = function (user) {
+  var accessTokens = this.getUserAccessTokenFile(user);
+  var idx = 0;
+  var countAccessToken = accessTokens.length;
+  if(countAccessToken < 1) {
+    return false;
+  }
+
+  if(this.currentConfiguration.name === undefined) {
+    return false;
+  }
+
+  for(; idx < countAccessToken; idx++) {
+    if(accessTokens[idx].configuration_name === this.currentConfiguration.name) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+Bot.prototype.isAccessTokenSetted = function () {
+  return Object.keys(this.accessToken).length > 0;
+};
+
+Bot.prototype.download = function(url, destination, callback, countAttempt) {
+  var that = this;
+  var wrapper;
+  var file;
+  var request;
+
+  if(url.substr(0,5) === "https") {
+    wrapper = require('https');
+  }
+  else if(url.substr(0,4) === "http") {
+    wrapper = require('http');
+  }
+  else {
+    callback('Download only http or https ressource');
+    return;
+  }
+
+  countAttempt = countAttempt || 0;
+
+  file = require('fs').createWriteStream(destination);
+  request = wrapper.get(url, function(response) {
+    if(response.statusCode >= 400) {
+      countAttempt++;
+
+      if(countAttempt > that.maxAttemptForDownload) {
+        callback('Download failed for ' + url);
+        return;
+      }
+
+      setTimeout(function(){
+        that.download(url, destination, callback, countAttempt);
+      }, that.delayBeforeNewAttemptDownload);
+
+      return;
+    }
+
+    response.pipe(file);
+
+    file.on('finish', function() {
+      file.close(callback);
+    });
+
+  }).on('error', function(error) {
+    require('fs').unlink(destination);
+
+    if (callback) {
+      callback(error.message);
+    }
+  });
 };
 
 // todo
@@ -39,147 +223,6 @@ Bot.prototype.updateRateLimit = function(remainingRateLimit) {
 
     saveRateLimitByName(this.getAppName(), JSON.stringify(rateLimitApp));
   }
-};
-
-// todo / implement
-Bot.prototype.getAuthorizeCodeUrl = function() {
-  /*return 'https://api.pinterest.com/oauth/?'
-    + 'response_type=code&'
-    + 'redirect_uri=' + this.conf.callback_url + '&'
-    + 'client_id=' + this.conf.consumer_key + '&'
-    + 'scope=' + this.conf.scope.join(',');*/
-};
-
-// todo / implement
-Bot.prototype.getAccessToken = function(code, callback) {
-  /*var uri = 'grant_type=authorization_code&'
-    + 'client_id=' + this.conf.consumer_key + '&'
-    + 'client_secret=' + this.conf.consumer_secret + '&'
-    + 'code=' + code;
-
-  var that = this;
-
-  var options = {
-    hostname: this.apiDomain,
-    port: 443,
-    path: '/v1/oauth/token?' + uri,
-    method: 'POST'
-  };
-
-  var req = that.https.request(options, function(res) {
-    var data = '';
-    res.on('data', function(chunkData) {
-      data+= chunkData;
-    });
-
-    res.on('end', function() {
-      if(res.statusCode === 200) {
-        callback(false, JSON.parse(data));
-      }
-      else {
-        callback(JSON.parse(data), false);
-      }
-    });
-  });
-  req.end();
-
-  req.on('error', function(e) {
-    callback(e, false);
-  });*/
-};
-
-// todo / implement
-Bot.prototype.isAccessTokenUserCompatibleWithCurrentApp = function (user) {
-  try {
-    var tokenJson = JSON.parse(fs.readFileSync(__dirname + '/../oauth_access_cache/' + user + '.tok'));
-    for (var i = 0; i < tokenJson.length; i++) {
-      if(tokenJson[i].app_name === this.getAppName()) {
-        return true;
-      }
-    }
-  } catch (e) {
-    log.error('BotBot', 'Access token not found for user %s', user);
-    process.exit(1);
-  }
-
-  return false;
-};
-
-// todo / implement
-Bot.prototype.setAccessTokenByUser = function (user) {
-  try {
-    var tokenJson = JSON.parse(fs.readFileSync(__dirname + '/../oauth_access_cache/' + user + '.tok'));
-    for (var i = 0; i < tokenJson.length; i++) {
-      if(tokenJson[i].app_name === this.getAppName()) {
-        this.setAccessToken(tokenJson[i].access_token);
-        return;
-      }
-    }
-  } catch (e) {
-    log.error('BotBot', 'Access token not found for user %s', user);
-    process.exit(1);
-  }
-
-  log.error('BotBot', 'Access token user %s not usable with app %s', user, this.getAppName());
-  process.exit(1);
-};
-
-// todo / implement
-Bot.prototype.isAccessTokenSetted = function () {
-  if(this.conf.access_token.length === 0) {
-    log.error('BotBot', 'Invalid Access Token, user is required');
-    process.exit(1);
-  }
-};
-
-// todo / implement
-Bot.prototype.download = function(url, dest, callback, retry) {
-  var wrapper;
-  retry = retry || 0;
-
-  if(url.substr(0,5) === "https") {
-    wrapper = this.https;
-  }
-  else if(url.substr(0,4) === "http") {
-    wrapper = this.http;
-  }
-  else {
-    callback(false);
-    return;
-  }
-
-  var fs = this.fs;
-  var file = fs.createWriteStream(dest);
-  var request = wrapper.get(url, function(response) {
-    if(response.statusCode >= 400) {
-      retry++;
-
-      if(retry > 3) {
-        //log.error('RMasterBot', 'Url not found for download: %s', url);
-        callback(false);
-        return;
-      }
-
-      //log.info('RMasterBot', '%d retry to download: %s', retry, url);
-
-      setTimeout(function(){
-        download(url, dest, callback, retry);
-      }, 1000);
-
-      return;
-    }
-
-    response.pipe(file);
-    file.on('finish', function() {
-      file.close(callback);
-    });
-
-  }).on('error', function(err) {
-    fs.unlink(dest);
-    if (callback) {
-      callback(err.message);
-    }
-  });
 };
 
 // todo / implement
@@ -234,106 +277,18 @@ Bot.prototype.saveRateLimitByName = function(name, json) {
   fs.writeFileSync(__dirname + '/../rate_limit_cache/' + name + '.json', json, 'utf8');
 };
 
-// todo / implement
-Bot.prototype.getApp = function getApp(name) {
-  if(globalApp !== null) {
-    name = globalApp;
+Bot.prototype.isFileExist = function(filepath) {
+  try {
+    return require('fs').lstatSync(filepath);
   }
-
-  if(name !== undefined) {
-    for (var i = 0; i < confPinterestApp.length; i++) {
-      if(confPinterestApp[i].name === name) {
-        //log.info('RPinterestBot', 'Use Pinterest app: %s', name);
-        client = new RPinterest(confPinterestApp[i]);
-        if(globalUser !== null) {
-          //log.info('RPinterestBot', 'Use Token user: %s', globalUser);
-          client.setAccessTokenByUser(globalUser);
-        }
-        else {
-          // if we have a user token but not specified we used it
-          var tokenFiles = [];
-          var catchTokenFile = true;
-          fs.readdirSync(__dirname + '/../oauth_access_cache/').forEach(function(file) {
-            if(catchTokenFile) {
-              if(file.match(/\.tok$/) !== null) {
-                tokenFiles.push(file);
-                if(tokenFiles.length > 2) {
-                  catchTokenFile = false;
-                }
-              }
-            }
-          });
-          if(tokenFiles.length === 1) {
-            var possibleUser = tokenFiles[0].replace('.tok', '');
-            if(client.isAccessTokenUserCompatibleWithCurrentApp(possibleUser)) {
-              globalUser = possibleUser;
-              //log.info('RPinterestBot', 'Use Token user: %s', globalUser);
-              client.setAccessTokenByUser(globalUser);
-            }
-          }
-        }
-
-        var rateLimitApp = getRateLimitByName(client.getAppName());
-        if(globalUser !== undefined && rateLimitApp[globalUser] !== undefined) {
-          if(rateLimitApp[globalUser]['remaining'] === 0 && (rateLimitApp[globalUser]['last_access'] + (60*60*1000) ) > new Date().getTime() ) {
-            //log.error('RPinterestBot', 'No api call remaining');
-            process.exit(1);
-          }
-        }
-
-        return client;
-      }
-    }
-    //log.error('RPinterestBot', 'Pinterest app %s not found', name);
-    process.exit(1);
-  }
-  else {
-    // just give the first pinterest app
-    //log.info('RPinterestBot', 'Use Pinterest app: %s', confPinterestApp[0].name);
-    client = new RPinterest(confPinterestApp[0]);
-    if(globalUser !== null) {
-      //log.info('RPinterestBot', 'Use Token user: %s', globalUser);
-      client.setAccessTokenByUser(globalUser);
-    }
-    else {
-      // if we have a user token but not specified we used it
-      var tokenFiles = [];
-      var catchTokenFile = true;
-      fs.readdirSync(__dirname + '/../oauth_access_cache/').forEach(function(file) {
-        if(catchTokenFile) {
-          if(file.match(/\.tok$/) !== null) {
-            tokenFiles.push(file);
-            if(tokenFiles.length > 2) {
-              catchTokenFile = false;
-            }
-          }
-        }
-      });
-      if(tokenFiles.length === 1) {
-        var possibleUser = tokenFiles[0].replace('.tok', '');
-        if(client.isAccessTokenUserCompatibleWithCurrentApp(possibleUser)) {
-          globalUser = possibleUser;
-          //log.info('RPinterestBot', 'Use Token user: %s', globalUser);
-          client.setAccessTokenByUser(globalUser);
-        }
-      }
-    }
-
-    var rateLimitApp = getRateLimitByName(client.getAppName());
-    if(globalUser !== undefined && rateLimitApp[globalUser] !== undefined) {
-      if(rateLimitApp[globalUser]['remaining'] === 0 && (rateLimitApp[globalUser]['last_access'] + (60*60*1000) ) > new Date().getTime() ) {
-        //log.error('RPinterestBot', 'No api call remaining');
-        process.exit(1);
-      }
-    }
-
-    return client;
+  catch(e){
+    return false;
   }
 };
 
-// todo / implement
-Bot.prototype.logPinterestError = function logPinterestError(error) {
-  log.error('RPinterestBot', 'code: %d | message: "%s"', error.code, error.message);
+Bot.prototype.RError = function (code, message, file, lineNumber) {
+  var _RError = require(__dirname + '/rerror.js');
+  return new _RError(code, message, file, lineNumber);
 };
 
 module.exports = Bot;

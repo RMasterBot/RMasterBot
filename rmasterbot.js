@@ -1,48 +1,58 @@
-function RMasterBot(bot, configuration) {
-  this.fs = require('fs');
-  this.corePath = __dirname + '/core';
-
+function RMasterBot(botName, configuration) {
   this.bot = null;
   this.bots = [];
-  this.botFile = __dirname + '/bots.json';
+  this.botsFile = __dirname + '/bots.json';
   this.botSelectedIndex = null;
-
-  this.loadCore();
 
   this.getBotsInstalled();
 
-  if(bot !== undefined) {
-    this.getBot(bot, configuration);
+  if(botName !== undefined) {
+    this.createBot(botName, configuration);
   }
 }
 
-RMasterBot.prototype.loadCore = function(){
-  require(this.corePath + '/bot.js');
+RMasterBot.prototype.getBot = function(){
+  return this.bot;
+};
+
+RMasterBot.prototype.getBots = function(){
+  return this.bots;
 };
 
 RMasterBot.prototype.getBotsInstalled = function(){
-  if(this.lstatSync(this.botFile) === false) {
-    throw 'No Bots installed!';
+  if(this.lstatSync(this.botsFile) === false) {
+    throw module.exports.RError('RMB-001', 'No Bots installed!');
   }
 
-  this.bots = JSON.parse(this.fs.readFileSync(this.botFile, 'utf-8'));
+  this.bots = JSON.parse(require('fs').readFileSync(this.botsFile, 'utf-8'));
 };
 
-RMasterBot.prototype.getBot = function(bot, configuration){
-  if(this.isBotExist(bot) === false) {
-    throw 'No bot ' + bot + ' found';
+RMasterBot.prototype.createBot = function(botName, configuration){
+  if(this.isBotExist(botName) === false) {
+    throw module.exports.RError('RMB-002', 'Bot %s not found', botName);
   }
 
-  var app = require(__dirname + '/applications/' + this.bots[this.botSelectedIndex].bot_folder + '/pinterest.js');
-  this.bot = new app();
+  var bot = require(__dirname + '/applications/' + this.bots[this.botSelectedIndex].bot_folder + '/main.js');
+  this.bot = new bot(
+    this.bots[this.botSelectedIndex].bot_name,
+    this.bots[this.botSelectedIndex].bot_folder,
+    this.bots[this.botSelectedIndex].configurations
+  );
+
+  if(typeof configuration === 'string') {
+    this.bot.useConfigurationByName(configuration);
+  }
+  else if(configuration !== undefined){
+    this.bot.setCurrentConfiguration(configuration);
+  }
 };
 
-RMasterBot.prototype.isBotExist = function(bot) {
+RMasterBot.prototype.isBotExist = function(botName) {
   var len = this.bots.length;
   var i;
 
   for(i = 0; i < len; i++) {
-    if(this.bots[i].bot_name.toLowerCase() === bot.toLowerCase()) {
+    if(this.bots[i].bot_name.toLowerCase() === botName.toLowerCase()) {
       this.botSelectedIndex = i;
       return true;
     }
@@ -53,7 +63,7 @@ RMasterBot.prototype.isBotExist = function(bot) {
 
 RMasterBot.prototype.lstatSync = function(path) {
   try {
-    return this.fs.lstatSync(path);
+    return require('fs').lstatSync(path);
   }
   catch(e){
     return false;
@@ -61,24 +71,29 @@ RMasterBot.prototype.lstatSync = function(path) {
 };
 
 module.exports.getBotsInstalled = function getBotsInstalled() {
-  return new RMasterBot().bots;
+  return new RMasterBot().getBots();
 };
 
 module.exports.getAllBots = function getAllBots() {
-  var botsInstalled = new RMasterBot().bots;
+  var botsInstalled = new RMasterBot().getBots();
   var bots = [];
   var i = 0;
   var maxBotsInstalled = botsInstalled.length;
 
   for(; i < maxBotsInstalled; i++) {
-    bots.push(new RMasterBot(botsInstalled[i].bot_name).bot);
+    var tmp = {};
+    tmp[botsInstalled[i].bot_name] = new RMasterBot(botsInstalled[i].bot_name).getBot();
+    /*tmp[botsInstalled[i].bot_name].setName(botsInstalled[i].bot_name);
+    tmp[botsInstalled[i].bot_name].setFolder(botsInstalled[i].bot_folder);
+    tmp[botsInstalled[i].bot_name].setAllConfigurations(botsInstalled[i].configurations);*/
+    bots.push(tmp);
   }
 
   return bots;
 };
 
 module.exports.getBot = function getBot(bot, configuration) {
-  return new RMasterBot(bot, configuration).bot;
+  return new RMasterBot(bot, configuration).getBot();
 };
 
 module.exports.RError = function RError(code, message, file, lineNumber) {
