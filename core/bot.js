@@ -1,8 +1,8 @@
 var Request = require(__dirname + '/request.js');
 
 function Bot(name, folder, allConfigurations){
-  this.name = name;
-  this.folder = folder;
+  this.name = name || '';
+  this.folder = folder || '';
 
   this.allConfigurations = allConfigurations || [];
   this.currentConfiguration = {};
@@ -14,7 +14,7 @@ function Bot(name, folder, allConfigurations){
 
   this.useModels = true;
 
-  this.maxAttemptForDownload = 3;
+  this.maxAttemptsForDownload = 3;
   this.delayBeforeNewAttemptDownload = 1000;
 
   this.remainingRequest = 100;
@@ -187,7 +187,7 @@ Bot.prototype.download = function(url, destination, callback, countAttempt) {
     if(response.statusCode >= 400) {
       countAttempt++;
 
-      if(countAttempt > that.maxAttemptForDownload) {
+      if(countAttempt > that.maxAttemptsForDownload) {
         callback('Download failed for ' + url);
         return;
       }
