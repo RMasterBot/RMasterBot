@@ -10,6 +10,7 @@ function Bot(name, folder, allConfigurations){
 
   this.accessTokensFolder = __dirname + '/../access_tokens/' + this.folder + '/';
   this.rateLimitsFolder = __dirname + '/../rate_limits/' + this.folder + '/';
+  this.modelsFolder =  __dirname + '/../models/' + this.folder + '/';
 
   this.useModels = true;
 
