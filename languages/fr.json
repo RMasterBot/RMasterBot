@@ -16,5 +16,12 @@
   "file not found: %s": "fichier introuvable : %s",
   "file error": "erreur fichier",
   "auth (basic) invalid": "auth (basic) invalide",
-  "httpModule invalid: %s": "httpModule invalide : %s"
+  "httpModule invalid: %s": "httpModule invalide : %s",
+  "No Bots installed!": "Aucun Bots installés",
+  "Bot %s not found": "Bot %s introuvable",
+  "Configuration named %s is not found": "La configuration nommée %s est introuvable",
+  "Access Token File not found for user %s": "Le fichier Access Token est introuvable pour l'utilisateur %s",
+  "Access Token empty for user %s": "Access Token vide pour l'utilisateur %s",
+  "Configuration name is undefined": "Le nom de la configuration est indéfinie",
+  "Access Token incompatible for user %s and configuration %s": "Access Token est incompatible pour l'utilisateur %s et la configuration %s"
 }
