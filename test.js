@@ -45,7 +45,7 @@ try {
   pinterestBotNoConf.enableModels();
   //pinterestBotNoConf.
 //pinterestBotNoConf.setAccessToken('xxx');
-return;
+
   pinterestBotNoConf.me(function (error, user) {
     if (error) {
       pinterestBotNoConf.logPinterestError(error);
