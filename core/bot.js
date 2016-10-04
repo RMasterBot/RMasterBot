@@ -12,7 +12,11 @@ function Bot(name, folder, allConfigurations){
   this.rateLimitsFolder = __dirname + '/../rate_limits/' + this.folder + '/';
   this.modelsFolder =  __dirname + '/../models/' + this.folder + '/';
 
+  this.models = {};
   this.useModels = true;
+  if(this.folder.length > 0) {
+    this.loadModels();
+  }
 
   this.maxAttemptsForDownload = 3;
   this.delayBeforeNewAttemptDownload = 1000;
@@ -274,6 +278,17 @@ Bot.prototype.getRateLimitByName = function(name, forceRefresh) {
 // todo / implement
 Bot.prototype.saveRateLimitByName = function(name, data) {
   require('fs').writeFileSync(this.rateLimitsFolder + name + '.json', JSON.stringify(data), 'utf8');
+};
+
+Bot.prototype.loadModels = function() {
+  var files = require('fs').readdirSync(this.modelsFolder);
+  var idx = 0;
+  var countFiles = files.length;
+  var className;
+  for(; idx < countFiles; idx++) {
+    className = files[idx].substr(0,1).toUpperCase() + files[idx].substr(1).replace('.js', '');
+    this.models[className] = require(this.modelsFolder + files[idx]);
+  }
 };
 
 Bot.prototype.isFileExist = function(filepath) {
