@@ -80,7 +80,6 @@ Bot.prototype.useConfigurationByName = function(configurationName) {
 
 Bot.prototype.getUserAccessTokenFile = function(user) {
   var filepath = this.accessTokensFolder + user + '.tok';
-  var fileContent;
 
   if(this.isFileExist(filepath)) {
     return JSON.parse(require('fs').readFileSync(filepath));
@@ -120,6 +119,10 @@ Bot.prototype.loadUserAccessTokenCompatible = function(user) {
   }
 
   throw this.RError('BOT-005', "Access Token incompatible for user %s and configuration %s", user, this.currentConfiguration.name);
+};
+
+Bot.prototype.getCurrentAccessToken = function() {
+  return this.accessToken.access_token;
 };
 
 Bot.prototype.enableModels = function() {
@@ -218,16 +221,159 @@ Bot.prototype.download = function(url, destination, callback, countAttempt) {
   });
 };
 
-// todo
-Bot.prototype.updateRateLimit = function(remainingRateLimit) {
-  var rateLimitApp = getRateLimitByName(this.getAppName());
+Bot.prototype.getRemainingRequestsFromResult = function(resultFromRequest) {
+  throw this.RError('BOT-008', "Implement getRemainingRequestsFromResult");
+};
 
-  if(globalUser !== undefined && rateLimitApp[globalUser] !== undefined) {
-    rateLimitApp[globalUser]['last_access'] = new Date().getTime();
-    rateLimitApp[globalUser]['remaining'] = parseInt(remainingRateLimit);
-
-    saveRateLimitByName(this.getAppName(), JSON.stringify(rateLimitApp));
+Bot.prototype.updateRemainingRequests = function(resultFromRequest, urls) {
+  var remaining = this.getRemainingRequestsFromResult(resultFromRequest);
+  var rateLimits = this.getCurrentRateLimit();
+  if(rateLimits === null) {
+    return;
   }
+
+  var found;
+
+  var idxRateLimits = 0;
+  var countRateLimits = rateLimits.length;
+
+  if(urls === undefined) {
+    urls = ['global'];
+  }
+  else if(typeof urls === 'string') {
+    urls = [urls];
+  }
+
+  var idxUrls = 0;
+  var countUrls = urls.length;
+
+  var tmp = [];
+  for(; idxUrls < countUrls; idxUrls++) {
+    found = false;
+    for(; idxRateLimits < countRateLimits; idxRateLimits++) {
+      if(rateLimits[idxRateLimits]['url'] === urls[idxUrls]) {
+        rateLimits[idxRateLimits]['last_access'] = new Date().getTime();
+        rateLimits[idxRateLimits]['remaining'] = remaining;
+        found = true;
+      }
+    }
+
+    if(!found) {
+      tmp.push({
+        'url':urls[idxUrls],
+        'last_access': new Date().getTime(),
+        'remaining': remaining
+      });
+    }
+  }
+
+  if(tmp.length > 0) {
+    rateLimits = rateLimits.concat(tmp);
+  }
+
+  this.saveCurrentRateLimit(rateLimits);
+};
+
+Bot.prototype.getCurrentRateLimitFile = function() {
+  if(this.currentConfiguration.name === undefined) {
+    return null;
+  }
+
+  if(this.isFileExist(this.rateLimitsFolder + this.currentConfiguration.name + '.json') === false) {
+    require('fs').writeFileSync(this.rateLimitsFolder + this.currentConfiguration.name + '.json', '[]');
+    return JSON.parse('[]');
+  }
+
+  return JSON.parse(require('fs').readFileSync(this.rateLimitsFolder + this.currentConfiguration.name + '.json'));
+};
+
+Bot.prototype.getCurrentRateLimit = function() {
+  var jsonFile = this.getCurrentRateLimitFile();
+  if(jsonFile === null) {
+    return null;
+  }
+
+  var idx = 0;
+  var max = jsonFile.length;
+
+  for(; idx < max; idx++) {
+    if(jsonFile[idx]['access_token'] === this.getCurrentAccessToken()) {
+      return jsonFile[idx]['rate_limits'];
+    }
+  }
+
+  return [];
+};
+
+Bot.prototype.saveCurrentRateLimit = function(rateLimits) {
+  var jsonFile = this.getCurrentRateLimitFile();
+  var idx = 0;
+  var max = jsonFile.length;
+  var found = false;
+
+  for(; idx < max; idx++) {
+    if(jsonFile[idx]['access_token'] === this.getCurrentAccessToken()) {
+      jsonFile[idx]['rate_limits'] = rateLimits;
+      found = true;
+    }
+  }
+
+  if(!found) {
+    jsonFile.push({
+      "access_token": this.getCurrentAccessToken(),
+      "rate_limits": rateLimits
+    })
+  }
+
+  require('fs').writeFileSync(this.rateLimitsFolder + this.currentConfiguration.name + '.json', JSON.stringify(jsonFile));
+};
+
+Bot.prototype.hasRemainingRequests = function() {
+  return this.hasRemainingRequestsFor();
+};
+
+Bot.prototype.hasRemainingRequestsFor = function(urls) {
+  return this.arrayMin(this.countRemainingRequestsFor(urls)) > 0;
+};
+
+Bot.prototype.countRemainingRequestsFor = function(urls) {
+  var remainingRequestsValues = [];
+  if(urls === undefined) {
+    urls = ['global'];
+  }
+  else if(typeof urls === 'string') {
+    urls = [urls];
+  }
+
+  var idxUrls;
+  var countUrls = urls.length;
+
+  var rateLimits = this.getCurrentRateLimit();
+  if(rateLimits === null) {
+    for(idxUrls = 0; idxUrls < countUrls; idxUrls++) {
+      remainingRequestsValues.push(this.remainingRequest);
+    }
+    return remainingRequestsValues;
+  }
+
+  var idxRateLimits = 0;
+  var countRateLimits = rateLimits.length;
+  var found;
+  for(idxUrls = 0; idxUrls < countUrls; idxUrls++) {
+    found = false;
+    for(; idxRateLimits < countRateLimits; idxRateLimits++) {
+      if(rateLimits[idxRateLimits]['url'] === urls[idxUrls]) {
+        remainingRequestsValues.push(rateLimits[idxRateLimits]['remaining']);
+        found = true;
+      }
+    }
+
+    if(!found) {
+      remainingRequestsValues.push(this.remainingRequest);
+    }
+  }
+
+  return remainingRequestsValues;
 };
 
 // todo / implement
@@ -260,7 +406,7 @@ Bot.prototype.getRateLimitByName = function(name, forceRefresh) {
   }
 
   try {
-    var rateLimitFileStats = require('fs').statSync(this.rateLimitsFolder + name + '.json');
+    var rateLimitFileStats = require('fs').lstatSync(this.rateLimitsFolder + name + '.json');
     var _date = new Date();
     _date.setSeconds(_date.getSeconds() - this.remainingTime);
     // if file is still fresh, we can read and return it
@@ -285,6 +431,7 @@ Bot.prototype.loadModels = function() {
   var idx = 0;
   var countFiles = files.length;
   var className;
+
   for(; idx < countFiles; idx++) {
     className = files[idx].substr(0,1).toUpperCase() + files[idx].substr(1).replace('.js', '');
     this.models[className] = require(this.modelsFolder + files[idx]);
@@ -303,6 +450,19 @@ Bot.prototype.isFileExist = function(filepath) {
 Bot.prototype.RError = function (code, message, file, lineNumber) {
   var _RError = require(__dirname + '/rerror.js');
   return new _RError(code, message, file, lineNumber);
+};
+
+Bot.prototype.arrayMin = function(array) {
+  var len = array.length;
+  var min = Infinity;
+
+  while (len--) {
+    if (array[len] < min) {
+      min = array[len];
+    }
+  }
+
+  return min;
 };
 
 module.exports = Bot;
