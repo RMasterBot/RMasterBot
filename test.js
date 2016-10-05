@@ -46,6 +46,9 @@ try {
   //pinterestBotNoConf.
 //pinterestBotNoConf.setAccessToken('xxx');
 
+  console.log(pinterestBotNoConf.hasRemainingRequests());
+  console.log(pinterestBotNoConf.hasRemainingRequestsFor(['/me', '/boards', '/toto']));
+return;
   pinterestBotNoConf.me(function (error, user) {
     if (error) {
       pinterestBotNoConf.logPinterestError(error);
