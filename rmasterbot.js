@@ -83,9 +83,6 @@ module.exports.getAllBots = function getAllBots() {
   for(; i < maxBotsInstalled; i++) {
     var tmp = {};
     tmp[botsInstalled[i].bot_name] = new RMasterBot(botsInstalled[i].bot_name).getBot();
-    /*tmp[botsInstalled[i].bot_name].setName(botsInstalled[i].bot_name);
-    tmp[botsInstalled[i].bot_name].setFolder(botsInstalled[i].bot_folder);
-    tmp[botsInstalled[i].bot_name].setAllConfigurations(botsInstalled[i].configurations);*/
     bots.push(tmp);
   }
 
@@ -94,6 +91,23 @@ module.exports.getAllBots = function getAllBots() {
 
 module.exports.getBot = function getBot(bot, configuration) {
   return new RMasterBot(bot, configuration).getBot();
+};
+
+module.exports.doBotJob = function doBotJob(bot, job, args, callback) {
+  if(typeof bot === 'string') {
+    bot = new RMasterBot(bot).getBot();
+  }
+
+  var jobFile = bot.getPrivateJobFile(job);
+  if(jobFile === null) {
+    jobFile = bot.getJobFile(job);
+  }
+
+  if(jobFile === null) {
+    throw module.exports.RError('RMB-003', 'Job %s for Bot %s not found', job, bot.getName());
+  }
+
+  require(jobFile)(bot, args, callback);
 };
 
 module.exports.RError = function RError(code, message, file, lineNumber) {

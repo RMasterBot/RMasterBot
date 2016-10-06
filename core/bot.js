@@ -11,6 +11,8 @@ function Bot(name, folder, allConfigurations){
   this.accessTokensFolder = __dirname + '/../access_tokens/' + this.folder + '/';
   this.rateLimitsFolder = __dirname + '/../rate_limits/' + this.folder + '/';
   this.modelsFolder =  __dirname + '/../models/' + this.folder + '/';
+  this.privateJobsFolder =  __dirname + '/../private_jobs/' + this.folder + '/';
+  this.jobsFolder =  __dirname + '/../jobs/' + this.folder + '/';
 
   this.models = {};
   this.useModels = true;
@@ -432,6 +434,36 @@ Bot.prototype.arrayMin = function(array) {
   }
 
   return min;
+};
+
+Bot.prototype.getPrivateJobFile = function(job) {
+  var files = require('fs').readdirSync(this.privateJobsFolder);
+  var countFiles = files.length;
+  var idxFiles = 0;
+  job = job.toLowerCase().replace('.js', '');
+
+  for(; idxFiles < countFiles; idxFiles++) {
+    if(files[idxFiles].toLowerCase().replace('.js', '') === job) {
+      return this.privateJobsFolder + files[i];
+    }
+  }
+
+  return null;
+};
+
+Bot.prototype.getJobFile = function(job) {
+  var files = require('fs').readdirSync(this.jobsFolder);
+  var countFiles = files.length;
+  var idxFiles = 0;
+  job = job.toLowerCase().replace('.js', '');
+
+  for(; idxFiles < countFiles; idxFiles++) {
+    if(files[idxFiles].toLowerCase().replace('.js', '') === job) {
+      return this.jobsFolder + files[idxFiles];
+    }
+  }
+
+  return null;
 };
 
 module.exports = Bot;

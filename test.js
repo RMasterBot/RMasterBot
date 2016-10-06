@@ -98,8 +98,12 @@ try {
   pinterestBotWithConf.me(error, data, callback);
 */
 // 3/ lancer des jobs
-  rmasterbot.doBotJob('twitter', 'me', extraArguments);
-  rmasterbot.doBotJob(pinterestBotWithConf, 'me', extraArguments);
+  var args = [];
+  function callback(error, ret){
+    console.log(ret);
+  }
+  //rmasterbot.doBotJob('twitter', 'me', extraArguments, callback);
+  rmasterbot.doBotJob(pinterestBotNoConf, 'me', args, callback);
 }catch(e){
   console.log(e.toString());
 }
