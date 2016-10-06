@@ -23,5 +23,6 @@
   "Access Token File not found for user %s": "Le fichier Access Token est introuvable pour l'utilisateur %s",
   "Access Token empty for user %s": "Access Token vide pour l'utilisateur %s",
   "Configuration name is undefined": "Le nom de la configuration est indéfinie",
-  "Access Token incompatible for user %s and configuration %s": "Access Token est incompatible pour l'utilisateur %s et la configuration %s"
+  "Access Token incompatible for user %s and configuration %s": "Access Token est incompatible pour l'utilisateur %s et la configuration %s",
+  "Job %s for Bot %s not found": "Le Job %s pour le Bot %s est introuvable"
 }
