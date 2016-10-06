@@ -21,8 +21,10 @@ function Bot(name, folder, allConfigurations){
   this.maxAttemptsForDownload = 3;
   this.delayBeforeNewAttemptDownload = 1000;
 
-  this.remainingRequest = 100;
-  this.remainingTime = 60*60;
+  this.defaultRemainingRequest = 100;
+  this.defaultRemainingTime = 60*60;
+
+  this.convertLastAccessInMilliseconds = true;
 }
 
 Bot.prototype = new Request();
@@ -221,6 +223,18 @@ Bot.prototype.download = function(url, destination, callback, countAttempt) {
   });
 };
 
+Bot.prototype.getDefaultRemainingRequest = function(url){
+  return this.defaultRemainingRequest;
+};
+
+Bot.prototype.getDefaultRemainingTime = function(url){
+  if(this.convertLastAccessInMilliseconds) {
+    return this.defaultRemainingTime * 1000;
+  }
+
+  return this.defaultRemainingTime;
+};
+
 Bot.prototype.getRemainingRequestsFromResult = function(resultFromRequest) {
   throw this.RError('BOT-008', "Implement getRemainingRequestsFromResult");
 };
@@ -351,7 +365,7 @@ Bot.prototype.countRemainingRequestsFor = function(urls) {
   var rateLimits = this.getCurrentRateLimit();
   if(rateLimits === null) {
     for(idxUrls = 0; idxUrls < countUrls; idxUrls++) {
-      remainingRequestsValues.push(this.remainingRequest);
+      remainingRequestsValues.push(this.getDefaultRemainingRequest(urls[idxUrls]));
     }
     return remainingRequestsValues;
   }
@@ -359,71 +373,26 @@ Bot.prototype.countRemainingRequestsFor = function(urls) {
   var idxRateLimits = 0;
   var countRateLimits = rateLimits.length;
   var found;
+  var futurLastAccess;
   for(idxUrls = 0; idxUrls < countUrls; idxUrls++) {
     found = false;
     for(; idxRateLimits < countRateLimits; idxRateLimits++) {
       if(rateLimits[idxRateLimits]['url'] === urls[idxUrls]) {
+        futurLastAccess = this.getDefaultRemainingTime(urls[idxUrls]) + rateLimits[idxRateLimits]['last_access'];
+        if(futurLastAccess < new Date().getTime()) {
+          rateLimits[idxRateLimits]['remaining'] = this.getDefaultRemainingRequest(urls[idxUrls]);
+        }
         remainingRequestsValues.push(rateLimits[idxRateLimits]['remaining']);
         found = true;
       }
     }
 
     if(!found) {
-      remainingRequestsValues.push(this.remainingRequest);
+      remainingRequestsValues.push(this.getDefaultRemainingRequest(urls[idxUrls]));
     }
   }
 
   return remainingRequestsValues;
-};
-
-// todo / implement
-Bot.prototype.getClientRateLimit = function(client, callback) {
-  var appRateLimit = {};
-  var lastAccess = new Date().getTime();
-
-  fs.readdirSync(__dirname + '/../oauth_access_cache/').forEach(function(file) {
-    if(file.match(/\.tok$/) !== null) {
-      var user = file.replace('.tok', '');
-      var tokenJson = JSON.parse(fs.readFileSync(this.rateLimitsFolder + user + '.tok'));
-      for (var i = 0; i < tokenJson.length; i++) {
-        if(tokenJson[i].app_name === client.getAppName()) {
-          appRateLimit[user] = {"last_access": lastAccess, "remaining": this.remainingRequest};
-        }
-      }
-    }
-  });
-
-  callback(appRateLimit);
-};
-
-// todo / implement
-Bot.prototype.getRateLimitByName = function(name, forceRefresh) {
-  // search in folder rate_limit_cache
-  var rateLimitJson = null;
-
-  if(forceRefresh !== undefined && forceRefresh === true) {
-    return rateLimitJson;
-  }
-
-  try {
-    var rateLimitFileStats = require('fs').lstatSync(this.rateLimitsFolder + name + '.json');
-    var _date = new Date();
-    _date.setSeconds(_date.getSeconds() - this.remainingTime);
-    // if file is still fresh, we can read and return it
-    if(rateLimitFileStats.mtime.getTime() > _date.getTime()) {
-      rateLimitJson = require('fs').readFileSync(this.rateLimitsFolder + name + '.json', 'utf8');
-      rateLimitJson = JSON.parse(rateLimitJson);
-    }
-  } catch (e) {
-    //
-  }
-
-  return rateLimitJson;
-};
-
-// todo / implement
-Bot.prototype.saveRateLimitByName = function(name, data) {
-  require('fs').writeFileSync(this.rateLimitsFolder + name + '.json', JSON.stringify(data), 'utf8');
 };
 
 Bot.prototype.loadModels = function() {
