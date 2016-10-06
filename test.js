@@ -47,8 +47,9 @@ try {
 //pinterestBotNoConf.setAccessToken('xxx');
 
   console.log(pinterestBotNoConf.hasRemainingRequests());
-  console.log(pinterestBotNoConf.hasRemainingRequestsFor(['/me', '/boards', '/toto']));
-return;
+  console.log(pinterestBotNoConf.hasRemainingRequestsFor(['global', '/me', '/boards', '/toto']));
+  console.log(pinterestBotNoConf.countRemainingRequestsFor(['global', '/me', '/boards', '/toto']));
+/*
   pinterestBotNoConf.me(function (error, user) {
     if (error) {
       pinterestBotNoConf.logPinterestError(error);
@@ -75,8 +76,8 @@ return;
     console.log("getUrl: " + user.getUrl());
     console.log("getAccountType: " + user.getAccountType());
   });
-  return;
-//
+*/
+/*
   pinterestBotNoConf.setConfiguration({
     "key": "xxx",
     "secret": "xxx",
@@ -95,7 +96,7 @@ return;
     "url": "xxx"
   });
   pinterestBotWithConf.me(error, data, callback);
-
+*/
 // 3/ lancer des jobs
   rmasterbot.doBotJob('twitter', 'me', extraArguments);
   rmasterbot.doBotJob(pinterestBotWithConf, 'me', extraArguments);
