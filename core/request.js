@@ -211,7 +211,12 @@ Request.prototype.transformParameterGet = function(values) {
     }
   }
 
-  return "?" + queries.join('&');
+  var queryString = queries.join('&');
+  if(queryString.length > 0) {
+    queryString = "?" + queryString;
+  }
+
+  return queryString;
 };
 
 Request.prototype.transformParameterHeader = function(values) {

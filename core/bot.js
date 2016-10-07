@@ -141,12 +141,16 @@ Bot.prototype.setAccessToken = function(accessToken) {
   this.accessToken = accessToken;
 };
 
-Bot.prototype.getAuthorizeCodeUrl = function() {
-  throw this.RError('BOT-006', "Implement getAuthorizeCodeUrl");
+Bot.prototype.getAccessTokenUrl = function() {
+  throw this.RError('BOT-006', "Implement getAccessTokenUrl");
 };
 
-Bot.prototype.getAccessTokenByUrl = function(code, callback) {
-  throw this.RError('BOT-007', "Implement getAccessTokenByUrl");
+Bot.prototype.extractResponseDataForAccessToken = function(req) {
+  throw this.RError('BOT-007', "Implement extractResponseDataForAccessToken");
+};
+
+Bot.prototype.requestAccessToken = function(responseData, callback) {
+  throw this.RError('BOT-008', "Implement requestAccessToken");
 };
 
 Bot.prototype.isUserAccessTokenCompatibleWithCurrentConfiguration = function (user) {
@@ -238,7 +242,7 @@ Bot.prototype.getDefaultRemainingTime = function(url){
 };
 
 Bot.prototype.getRemainingRequestsFromResult = function(resultFromRequest) {
-  throw this.RError('BOT-008', "Implement getRemainingRequestsFromResult");
+  throw this.RError('BOT-009', "Implement getRemainingRequestsFromResult");
 };
 
 Bot.prototype.updateRemainingRequests = function(resultFromRequest, urls) {

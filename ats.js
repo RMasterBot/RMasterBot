@@ -1,5 +1,103 @@
-// load server
-// redirect user vers authorize url
-// retreive "code"
-// authenticate with "code" on another url
-// sometimes I have to load access token with no user (twitter case)
+function Ats() {
+  this.bot = null;
+  this.configurationName = null;
+  this.port = 9000;
+  this.scopes = '';
+
+  this.extractArguments();
+
+  this.configureBot();
+
+  this.launchServer();
+}
+
+Ats.prototype.showHelp = function() {
+  require(__dirname + '/helps/ats.js');
+  process.exit(1);
+};
+
+Ats.prototype.extractArguments = function(){
+  if(process.argv.indexOf('-h') !== -1 || process.argv.indexOf('--help') !== -1) {
+    this.showHelp();
+  }
+
+  if(process.argv[2]) {
+    this.bot = process.argv[2];
+  }
+
+  if(process.argv[3]) {
+    this.configurationName = process.argv[3];
+  }
+
+  if(process.argv[4]) {
+    this.port = process.argv[4];
+  }
+
+  if(process.argv[5]) {
+    this.scopes = process.argv[5];
+  }
+
+  if(this.bot === null) {
+    this.stopProcess('No bot provided');
+  }
+
+  if(this.configurationName === null) {
+    this.stopProcess('No configurationName provided');
+  }
+};
+
+Ats.prototype.stopProcess = function(exception) {
+  require('npmlog').error('ATS', exception);
+  process.exit(-1);
+};
+
+Ats.prototype.configureBot = function() {
+  var rmasterbot = require('./rmasterbot.js');
+  this.bot = rmasterbot.getBot(this.bot, this.configurationName);
+};
+
+Ats.prototype.launchServer = function() {
+  var that = this;
+  var http = require('http');
+  var server = http.createServer(function (req, res) {
+    that.treatRequestUrl(req, res);
+  });
+
+  server.listen(this.port, '127.0.0.1', function(){
+    require('npmlog').info('ATS', 'Server listening on port %d', that.port);
+  });
+};
+
+Ats.prototype.treatRequestUrl = function(req, res) {
+  if(req.url === '/') {
+    this.showHome(req, res);
+  }
+  else {
+    this.treatResponse(req, res);
+  }
+};
+
+Ats.prototype.showHome = function(req, res) {
+  var accessTokenUrl = this.bot.getAccessTokenUrl(this.scopes);
+  require('npmlog').info('ATS', 'Generate authentification url %s', accessTokenUrl);
+  res.writeHead(302, {'Location': accessTokenUrl});
+  res.end();
+};
+
+Ats.prototype.treatResponse = function(req, res) {
+  var that = this;
+
+  var responseData = this.bot.extractResponseDataForAccessToken(req);
+  if(responseData === null) {
+    res.end();
+    return;
+  }
+
+  this.bot.requestAccessToken(responseData, function(err, accessToken){
+    console.log(accessToken);
+    //that.bot.saveNewAccessToken(accessToken);
+    res.end();
+  });
+};
+
+new Ats();
