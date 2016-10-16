@@ -93,10 +93,24 @@ Ats.prototype.treatResponse = function(req, res) {
     return;
   }
 
-  this.bot.requestAccessToken(responseData, function(err, accessToken){
-    console.log(accessToken);
-    //that.bot.saveNewAccessToken(accessToken);
-    res.end();
+  this.bot.requestAccessToken(responseData, function(err, accessTokenData){
+    if(err) {
+      require('npmlog').error('ATS', 'Request Access Token error: %s', err);
+      res.end();
+      return;
+    }
+
+    that.bot.formatNewAccessToken(accessTokenData, that.scopes, function(err){
+      if(err) {
+        require('npmlog').error('ATS', 'Save New Access Token error: %s', err.toString());
+        res.end();
+        return;
+      }
+
+      that.bot.saveNewAccessToken(accessTokenData);
+      require('npmlog').info('ATS', 'New Access Token %s saved', accessTokenData.user);
+      res.end();
+    });
   });
 };
 
