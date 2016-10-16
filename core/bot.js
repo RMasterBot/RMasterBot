@@ -129,6 +129,10 @@ Bot.prototype.getCurrentAccessToken = function() {
   return this.accessToken.access_token;
 };
 
+Bot.prototype.setCurrentAccessToken = function(accessToken) {
+  this.accessToken.access_token = accessToken;
+};
+
 Bot.prototype.enableModels = function() {
   this.useModels = true;
 };
@@ -468,6 +472,63 @@ Bot.prototype.getJobFile = function(job) {
   }
 
   return null;
+};
+
+Bot.prototype.formatNewAccessToken = function(accessTokenData, scopes, callback) {
+  var that = this;
+
+  var formatAccessToken = {
+    "access_token": that.getAccessTokenFromAccessTokenData(accessTokenData),
+    "type": that.getTypeAccessTokenFromAccessTokenData(accessTokenData),
+    "user": null,
+    "scopes": scopes
+  };
+
+  that.getUserForNewAccessToken(formatAccessToken, function(err, user){
+    if(err) {
+      callback(err, null);
+    }
+    else {
+      formatAccessToken.user = user;
+      callback(null, formatAccessToken);
+    }
+  });
+};
+
+Bot.prototype.getAccessTokenFromAccessTokenData = function(accessTokenData) {
+  throw this.RError('BOT-010', "Implement getAccessTokenFromAccessTokenData");
+};
+
+Bot.prototype.getTypeAccessTokenFromAccessTokenData = function(accessTokenData) {
+  throw this.RError('BOT-011', "Implement getTypeAccessTokenFromAccessTokenData");
+};
+
+Bot.prototype.getUserForNewAccessToken = function(formatAccessToken, callback) {
+  throw this.RError('BOT-012', "Implement getUserForNewAccessToken");
+};
+
+Bot.prototype.saveNewAccessToken = function(accessTokenData) {
+  if(!this.isFileExist(this.accessTokensFolder + this.currentConfiguration.name + '.json')) {
+    require('fs').writeFileSync(this.accessTokensFolder + this.currentConfiguration.name + '.json', '[]');
+  }
+
+  var file = JSON.parse(require('fs').readFileSync(this.accessTokensFolder + this.currentConfiguration.name + '.json'));
+  var countAccessToken = file.length;
+  var idx = 0;
+  var toAppend = true;
+
+  for(; idx < countAccessToken; idx++) {
+    if(file[idx].access_token === accessTokenData.access_token) {
+      file[idx] = accessTokenData;
+      toAppend = false;
+    }
+  }
+
+  if(toAppend) {
+    file.push(accessTokenData);
+  }
+
+  require('fs').writeFileSync(this.accessTokensFolder + this.currentConfiguration.name + '.json', JSON.stringify(file));
 };
 
 module.exports = Bot;
