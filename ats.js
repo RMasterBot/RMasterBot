@@ -100,7 +100,7 @@ Ats.prototype.treatResponse = function(req, res) {
       return;
     }
 
-    that.bot.formatNewAccessToken(accessTokenData, that.scopes, function(err){
+    that.bot.formatNewAccessToken(accessTokenData, that.scopes, function(err, accessTokenData){
       if(err) {
         require('npmlog').error('ATS', 'Save New Access Token error: %s', err.toString());
         res.end();
