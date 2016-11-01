@@ -82,47 +82,35 @@ Bot.prototype.useConfigurationByName = function(configurationName) {
   throw this.RError('BOT-001', "Configuration named %s is not found", configurationName);
 };
 
-Bot.prototype.getUserAccessTokenFile = function(user) {
-  var filepath = this.accessTokensFolder + user + '.tok';
+Bot.prototype.getUserAccessTokenFileByUser = function(user) {
+  if(this.currentConfiguration.name === undefined) {
+    throw this.RError('BOT-xxx', "Configuration is empty");
+  }
+
+  var filepath = this.accessTokensFolder + this.currentConfiguration.name + '.json';
+  var fileContent;
+  var idxAccessToken = 0;
+  var countAccessToken;
 
   if(this.isFileExist(filepath)) {
-    return JSON.parse(require('fs').readFileSync(filepath));
+    fileContent = JSON.parse(require('fs').readFileSync(filepath));
+    countAccessToken = fileContent.length;
+
+    for (; idxAccessToken < countAccessToken; idxAccessToken++) {
+      if(user == fileContent[idxAccessToken].user) {
+        return fileContent[idxAccessToken];
+      }
+    }
+
+    throw this.RError('BOT-002', "Access Token File not found for user %s", user);
   }
   else {
     throw this.RError('BOT-002', "Access Token File not found for user %s", user);
   }
 };
 
-Bot.prototype.loadUserAccessToken = function(user) {
-  var accessTokens = this.getUserAccessTokenFile(user);
-  if(accessTokens.length > 0) {
-    this.accessToken = accessTokens[0];
-  }
-  else {
-    throw this.RError('BOT-003', "Access Token empty for user %s", user);
-  }
-};
-
-Bot.prototype.loadUserAccessTokenCompatible = function(user) {
-  var accessTokens = this.getUserAccessTokenFile(user);
-  var idx = 0;
-  var countAccessToken = accessTokens.length;
-  if(countAccessToken < 1) {
-    throw this.RError('BOT-003', "Access Token empty for user %s", user);
-  }
-
-  if(this.currentConfiguration.name === undefined) {
-    throw this.RError('BOT-004', "Configuration name is undefined");
-  }
-
-  for(; idx < countAccessToken; idx++) {
-    if(accessTokens[idx].configuration_name === this.currentConfiguration.name) {
-      this.accessToken = accessTokens[idx];
-      return;
-    }
-  }
-
-  throw this.RError('BOT-005', "Access Token incompatible for user %s and configuration %s", user, this.currentConfiguration.name);
+Bot.prototype.loadUserAccessTokenByUser = function(user) {
+  this.accessToken = this.getUserAccessTokenFileByUser(user);
 };
 
 Bot.prototype.getCurrentAccessToken = function() {
@@ -158,7 +146,7 @@ Bot.prototype.requestAccessToken = function(responseData, callback) {
 };
 
 Bot.prototype.isUserAccessTokenCompatibleWithCurrentConfiguration = function (user) {
-  var accessTokens = this.getUserAccessTokenFile(user);
+  var accessTokens = this.getUserAccessTokenFileByUser(user);
   var idx = 0;
   var countAccessToken = accessTokens.length;
   if(countAccessToken < 1) {
@@ -518,7 +506,7 @@ Bot.prototype.saveNewAccessToken = function(accessTokenData) {
   var toAppend = true;
 
   for(; idx < countAccessToken; idx++) {
-    if(file[idx].access_token === accessTokenData.access_token) {
+    if(file[idx].user === accessTokenData.user) {
       file[idx] = accessTokenData;
       toAppend = false;
     }

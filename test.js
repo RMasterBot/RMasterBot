@@ -33,12 +33,11 @@ try {
   bots = rmasterbot.getAllBots();
   //console.log(bots);
 // 1/ le bot sans conf
-  pinterestBotNoConf = rmasterbot.getBot('pinterest', 'rPinterestBot');
+  pinterestBotNoConf = rmasterbot.getBot('pinterest');
 // charger une configuration par son nom
   pinterestBotNoConf.useConfigurationByName('RPinterestBot');
 // charger un user token
-  pinterestBotNoConf.loadUserAccessToken('mytoken');
-  pinterestBotNoConf.loadUserAccessTokenCompatible('mytoken');
+  pinterestBotNoConf.loadUserAccessTokenByUser('rancoud');
 // desactiver le retour des requetes avec les models
   pinterestBotNoConf.disableModels();
 // activer le retour des requetes avec les models
