@@ -557,6 +557,7 @@ Install.prototype.copyFilesRecursive = function(srcPath, destPath, depth) {
 
 Install.prototype.launchPackageJson = function(folder) {
   if(this.lstatSync(folder + '/package.json')) {
+    this.logInfo('Launch package.json from "' + folder + '"');
     require('child_process').spawn('npm', ['i'], { env: process.env, cwd: folder + '/package.json', stdio: 'inherit' });
   }
 };
