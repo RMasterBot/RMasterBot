@@ -180,11 +180,11 @@ Install.prototype.deleteFolderRecursive = function(path) {
   var files = [];
   var currentPath;
 
-  if(that.lstatSync(path)) {
+  if(that.isFileExists(path)) {
     files = that.fs.readdirSync(path);
     files.forEach(function(file){
       currentPath = path + "/" + file;
-      if(that.lstatSync(currentPath).isDirectory()) {
+      if(that.isFileExists(currentPath).isDirectory()) {
         that.deleteFolderRecursive(currentPath);
       }
       else {
@@ -306,7 +306,7 @@ Install.prototype.checkInstallJson = function(){
   var idxBotsInstalled = 0;
   var countBotsInstalled;
 
-  if(this.lstatSync(this.botsInstalledFile)) {
+  if(this.isFileExists(this.botsInstalledFile)) {
     botsInstalledJson = JSON.parse(this.fs.readFileSync(this.botsInstalledFile, 'utf8'));
   }
   else {
@@ -314,7 +314,7 @@ Install.prototype.checkInstallJson = function(){
     this.fs.writeFileSync(this.botsInstalledFile, JSON.stringify(botsInstalledJson), 'utf8');
   }
 
-  if(this.lstatSync(this.installFileFromNewBot)) {
+  if(this.isFileExists(this.installFileFromNewBot)) {
     botToInstallJson = JSON.parse(this.fs.readFileSync(this.installFileFromNewBot, 'utf8'));
   }
   else {
@@ -389,7 +389,7 @@ Install.prototype.resolveConflict = function(botToInstallJson, hasFolderProblem,
         return;
       }
 
-      if (that.lstatSync(that.rootFolder + '/applications/' + answer) && that.lstatSync(that.rootFolder + '/applications/' + answer).isDirectory()) {
+      if (that.isFileExists(that.rootFolder + '/applications/' + answer) && that.isFileExists(that.rootFolder + '/applications/' + answer).isDirectory()) {
         console.log('Error, folder ' + answer + ' already exists');
         changeFolder();
         return;
@@ -489,7 +489,7 @@ Install.prototype.copyTempBotToFinalDestination = function(botToInstallJson) {
 
   for(; idxFoldersToCreate < countFoldersToCreate; idxFoldersToCreate++) {
     folder = this.rootFolder + '/' + this.foldersToCreate[idxFoldersToCreate] + '/' + botToInstallJson.bot_name;
-    if (this.lstatSync(folder) === false || this.lstatSync(folder).isDirectory() === false) {
+    if (this.isFileExists(folder) === false || this.isFileExists(folder).isDirectory() === false) {
       try {
         this.fs.mkdirSync(folder);
       }
@@ -508,7 +508,7 @@ Install.prototype.copyTempBotToFinalDestination = function(botToInstallJson) {
     this.logInfo('No configuration to setup');
   }
   else {
-    if(this.lstatSync(this.rootFolder + '/configurations/' + botToInstallJson.bot_folder + '/configuration.json') === false) {
+    if(this.isFileExists(this.rootFolder + '/configurations/' + botToInstallJson.bot_folder + '/configuration.json') === false) {
       this.launchSetupConfiguration(botToInstallJson, 'create');
     }
     else {
@@ -528,15 +528,15 @@ Install.prototype.copyFilesRecursive = function(srcPath, destPath, depth) {
     this.stopProcess('Depth copy folder exceded');
   }
 
-  if(that.lstatSync(srcPath)) {
+  if(that.isFileExists(srcPath)) {
     files = that.fs.readdirSync(srcPath);
     files.forEach(function(file){
       newSrcPath = srcPath + "/" + file;
       newDestPath = destPath + "/" + file;
-      if(that.lstatSync(newSrcPath).isDirectory()) {
+      if(that.isFileExists(newSrcPath).isDirectory()) {
         depth++;
 
-        if (that.lstatSync(newDestPath) === false || that.lstatSync(newDestPath).isDirectory() === false) {
+        if (that.isFileExists(newDestPath) === false || that.isFileExists(newDestPath).isDirectory() === false) {
           try {
             that.fs.mkdirSync(newDestPath);
           }
@@ -556,7 +556,7 @@ Install.prototype.copyFilesRecursive = function(srcPath, destPath, depth) {
 };
 
 Install.prototype.launchPackageJson = function(folder) {
-  if(this.lstatSync(folder + '/package.json')) {
+  if(this.isFileExists(folder + '/package.json')) {
     this.logInfo('Launch package.json from "' + folder + '"');
     require('child_process').spawn('npm', ['i'], { env: process.env, cwd: folder + '/package.json', stdio: 'inherit' });
   }
@@ -702,7 +702,7 @@ Install.prototype.endInstall = function() {
   process.exit(0);
 };
 
-Install.prototype.lstatSync = function(path) {
+Install.prototype.isFileExists = function(path) {
   try {
     return this.fs.lstatSync(path);
   }

@@ -20,7 +20,7 @@ RMasterBot.prototype.getBots = function(){
 };
 
 RMasterBot.prototype.getBotsInstalled = function(){
-  if(this.lstatSync(this.botsFile) === false) {
+  if(this.isFileExists(this.botsFile) === false) {
     throw module.exports.RError('RMB-001', 'No Bots installed!');
   }
 
@@ -61,7 +61,7 @@ RMasterBot.prototype.isBotExist = function(botName) {
   return false;
 };
 
-RMasterBot.prototype.lstatSync = function(path) {
+RMasterBot.prototype.isFileExists = function(path) {
   try {
     return require('fs').lstatSync(path);
   }

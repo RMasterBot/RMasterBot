@@ -93,7 +93,7 @@ Job.prototype.showHelp = function() {
 };
 
 Job.prototype.getBotFolder = function() {
-  if(this.lstatSync(this.rootFolder + '/bots.json') === false) {
+  if(this.isFileExists(this.rootFolder + '/bots.json') === false) {
     this.stopProcess('No bots installed');
   }
 
@@ -186,7 +186,7 @@ Job.prototype.launchJob = function() {
   require(this.jobFile);
 };
 
-Job.prototype.lstatSync = function(path) {
+Job.prototype.isFileExists = function(path) {
   try {
     return this.fs.lstatSync(path);
   }

@@ -50,7 +50,7 @@ function Pid() {
 }
 
 Pid.prototype.getBots = function() {
-  if(this.lstatSync(this.rootFolder + '/bots.json') === false) {
+  if(this.isFileExists(this.rootFolder + '/bots.json') === false) {
     this.stopProcess('No bots installed');
   }
   
@@ -276,7 +276,7 @@ Pid.prototype.killProcess = function(pid) {
   }
 };
 
-Pid.prototype.lstatSync = function(path) {
+Pid.prototype.isFileExists = function(path) {
   try {
     return this.fs.lstatSync(path);
   }
