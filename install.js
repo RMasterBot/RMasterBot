@@ -220,7 +220,7 @@ Install.prototype.unzipBot = function(){
       }
       else {
         zipfile.openReadStream(entry, function(err, readStream) {
-          if (error){
+          if (err){
             that.stopProcess('Failed open file in zip: ' + entry.fileName);
           }
 
@@ -255,18 +255,18 @@ Install.prototype.unzipBot = function(){
 };
 
 Install.prototype.extractPathAndFileFromZip = function(path) {
-  var parts = path.split('/');
   var file = null;
   var finalParts = [];
   var saveParts = false;
+  var parts = path.split('/');
   var countParts = parts.length;
-  var countFoldersSupported = this.foldersSupported.length;
   var idxParts = 0;
-  var idxFoldersSupported = 0;
+  var countFoldersSupported = this.foldersSupported.length;
+  var idxFoldersSupported;
 
   for(; idxParts < countParts; idxParts++) {
     if(saveParts === false) {
-      for (; idxFoldersSupported < countFoldersSupported; idxFoldersSupported++) {
+      for (idxFoldersSupported = 0; idxFoldersSupported < countFoldersSupported; idxFoldersSupported++) {
         if (parts[idxParts] === this.foldersSupported[idxFoldersSupported]) {
           if(idxParts < countParts - 1) {
             finalParts.push(parts[idxParts]);
@@ -474,6 +474,9 @@ Install.prototype.resolveConflict = function(botToInstallJson, hasFolderProblem,
     console.log('There is a conflict with bot name');
     changeName();
   }
+  else {
+    end();
+  }
 };
 
 Install.prototype.addNewBotToSavedBotsFile = function(botToInstallJson) {
@@ -499,8 +502,9 @@ Install.prototype.copyTempBotToFinalDestination = function(botToInstallJson) {
     }
 
     this.copyFilesRecursive(this.tempBotFolder + '/' + this.foldersToCreate[idxFoldersToCreate], folder, 0);
-    this.launchPackageJson(folder);
   }
+
+  this.launchPackageJson(this.tempBotFolder);
 
   this.logInfo('New bot "' + botToInstallJson.bot_name + '" is installed in folder "' + botToInstallJson.bot_folder + '"');
 
@@ -533,6 +537,7 @@ Install.prototype.copyFilesRecursive = function(srcPath, destPath, depth) {
     files.forEach(function(file){
       newSrcPath = srcPath + "/" + file;
       newDestPath = destPath + "/" + file;
+
       if(that.isFileExists(newSrcPath).isDirectory()) {
         depth++;
 
@@ -558,7 +563,14 @@ Install.prototype.copyFilesRecursive = function(srcPath, destPath, depth) {
 Install.prototype.launchPackageJson = function(folder) {
   if(this.isFileExists(folder + '/package.json')) {
     this.logInfo('Launch package.json from "' + folder + '"');
-    require('child_process').spawn('npm', ['i'], { env: process.env, cwd: folder + '/package.json', stdio: 'inherit' });
+    console.log(folder + '/package.json');
+    var exec = require('child_process').exec;
+    exec('npm install', {cwd : folder}, function(error, stdout, stderr) {
+      if (error) {
+        console.error('exec error: ' + error);
+        return;
+      }
+    });
   }
 };
 
