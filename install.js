@@ -14,6 +14,8 @@ function Install() {
   this.maxDepthCopyFolder = 3;
   this.botToInstallJson = {};
   this.hasToAddBot = true;
+  this.choiceConflictBot = null;
+  this.choiceConflictConfiguration = null;
 
   this.getArguments();
   this.detectBotType();
@@ -351,6 +353,7 @@ Install.prototype.resolveConflict = function(hasFolderProblem, hasNameProblem){
   var idxBotsInstalled = 0;
   var foldersTaken = [];
   var namesTaken = [];
+  var question;
   var rl = require('readline').createInterface({
     input: process.stdin,
     output: process.stdout
@@ -436,11 +439,17 @@ Install.prototype.resolveConflict = function(hasFolderProblem, hasNameProblem){
   }
   
   function resolveBot() {
-    rl.question('There is conflict with bot folder and bot name, do you want to erase old bot for new bot (e) or change name and/or folder of new bot (c) or quit (q) ? (e/c/q) ', function(answer){
+    question = "There is conflict with bot folder and bot name, what do you want to do:\n";
+    question+= "  -> erase old bot with new bot (e)\n";
+    question+= "  -> change name and/or folder of new bot (c)\n";
+    question+= "  -> quit (q)\n";
+    rl.question(question, function(answer){
       if(answer == 'c') {
+        that.choiceConflictBot = 'change';
         changeFolder();
       }
       else if(answer == 'e') {
+        that.choiceConflictBot = 'erase';
         eraseBot();
       }
       else if(answer == 'q') {
@@ -480,7 +489,12 @@ Install.prototype.addBotToSavedBotsFile = function() {
     this.addNewBotToSavedBotsFile();
   }
   else {
-    //
+    if(this.choiceConflictConfiguration === 'add') {
+      this.addNewConfigurationToSavedBotsFile();
+    }
+    else {
+      this.eraseWithNewConfigurationToSavedBotsFile();
+    }
   }
 };
 
@@ -492,6 +506,35 @@ Install.prototype.addNewBotToSavedBotsFile = function() {
   delete this.botToInstallJson.configuration;
 
   botsInstalledJson.push(this.botToInstallJson);
+  this.fs.writeFileSync(this.botsInstalledFile, JSON.stringify(botsInstalledJson), 'utf8');
+};
+
+Install.prototype.addNewConfigurationToSavedBotsFile = function() {
+  var idxBots = 0;
+  var botsInstalledJson = JSON.parse(this.fs.readFileSync(this.botsInstalledFile, 'utf8'));
+  var countBots = botsInstalledJson.length;
+
+  for(; idxBots < countBots; idxBots++) {
+    if(botsInstalledJson[idxBots].bot_name === this.botToInstallJson.bot_name) {
+      botsInstalledJson[idxBots].configurations.push(this.botToInstallJson.configuration);
+    }
+  }
+
+  this.fs.writeFileSync(this.botsInstalledFile, JSON.stringify(botsInstalledJson), 'utf8');
+};
+
+Install.prototype.eraseWithNewConfigurationToSavedBotsFile = function() {
+  var idxBots = 0;
+  var botsInstalledJson = JSON.parse(this.fs.readFileSync(this.botsInstalledFile, 'utf8'));
+  var countBots = botsInstalledJson.length;
+
+  for(; idxBots < countBots; idxBots++) {
+    if(botsInstalledJson[idxBots].bot_name === this.botToInstallJson.bot_name) {
+      botsInstalledJson[idxBots].configurations = [];
+      botsInstalledJson[idxBots].configurations.push(this.botToInstallJson.configuration);
+    }
+  }
+
   this.fs.writeFileSync(this.botsInstalledFile, JSON.stringify(botsInstalledJson), 'utf8');
 };
 
@@ -523,7 +566,12 @@ Install.prototype.copyTempBotToFinalDestination = function() {
     this.addBotToSavedBotsFile();
   }
   else {
-    this.launchSetupConfiguration('add');
+    if(this.choiceConflictBot === 'erase') {
+      this.resolveConflictConfiguration();
+    }
+    else {
+      this.launchSetupConfiguration('add');
+    }
   }
 };
 
@@ -696,6 +744,7 @@ Install.prototype.launchSetupConfiguration = function(modificationType) {
 
 Install.prototype.resolveConflictConfiguration = function() {
   var that = this;
+  var question;
   var rl = require('readline').createInterface({
     input: process.stdin,
     output: process.stdout
@@ -703,16 +752,22 @@ Install.prototype.resolveConflictConfiguration = function() {
   rl.clearLine(process.stdin);
 
   function ask() {
-    rl.question('A configuration file is already present, do you want to erase (e) file or add (a) a configuration or quit (q) ? (e/a/q) ', function (answer) {
+    question = "A configuration is already setted, what do you want to do:\n";
+    question+= "  -> erase (e)\n";
+    question+= "  -> add (a)\n";
+    question+= "  -> quit (q)\n";
+    rl.question(question, function (answer) {
       if(answer === 'a') {
         rl.clearLine(process.stdin);
         rl.close();
-        that.launchSetupConfiguration(this.botToInstallJson, 'add');
+        that.choiceConflictConfiguration = 'add';
+        that.launchSetupConfiguration('add');
       }
       else if(answer === 'e') {
         rl.clearLine(process.stdin);
         rl.close();
-        that.launchSetupConfiguration(this.botToInstallJson, 'erase');
+        that.choiceConflictConfiguration = 'erase';
+        that.launchSetupConfiguration('erase');
       }
       else if(answer === 'q') {
         rl.close();
