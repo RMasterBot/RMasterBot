@@ -436,7 +436,7 @@ Install.prototype.resolveConflict = function(botToInstallJson, hasFolderProblem,
   }
   
   function resolveBot() {
-    rl.question('There is conflict with bot folder and bot name, do you want to erase old bot for new bot (e) or change new bot configuration (c) or quit (q) ? (e/c/q) ', function(answer){
+    rl.question('There is conflict with bot folder and bot name, do you want to erase old bot for new bot (e) or change name and/or folder of new bot (c) or quit (q) ? (e/c/q) ', function(answer){
       if(answer == 'c') {
         changeFolder();
       }
@@ -668,7 +668,7 @@ Install.prototype.launchSetupConfiguration = function(botToInstallJson, modifica
     rl.clearLine(process.stdin);
     rl.close();
     configurationFileJson.push(configuration);
-    that.fs.writeFileSync(that.rootFolder + '/configurations/' + botToInstallJson.bot_folder + '/configuration.json', JSON.stringify(configurationFileJson), 'utf8');
+
     that.endInstall();
   }
 
