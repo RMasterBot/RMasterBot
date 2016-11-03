@@ -12,6 +12,8 @@ function Install() {
   this.foldersSupported = ['applications', 'docs', 'jobs', 'models'];
   this.foldersToCreate = ['access_tokens', 'applications', 'docs', 'downloads', 'jobs', 'models', 'private_jobs', 'process_ids', 'rate_limits'];
   this.maxDepthCopyFolder = 3;
+  this.botToInstallJson = {};
+  this.hasToAddBot = true;
 
   this.getArguments();
   this.detectBotType();
@@ -300,7 +302,6 @@ Install.prototype.extractPathAndFileFromZip = function(path) {
 
 Install.prototype.checkInstallJson = function(){
   var botsInstalledJson = null;
-  var botToInstallJson = null;
   var hasFolderProblem = false;
   var hasNameProblem = false;
   var idxBotsInstalled = 0;
@@ -315,7 +316,7 @@ Install.prototype.checkInstallJson = function(){
   }
 
   if(this.isFileExists(this.installFileFromNewBot)) {
-    botToInstallJson = JSON.parse(this.fs.readFileSync(this.installFileFromNewBot, 'utf8'));
+    this.botToInstallJson = JSON.parse(this.fs.readFileSync(this.installFileFromNewBot, 'utf8'));
   }
   else {
     this.stopProcess('File install.json is missing in bot temp folder');
@@ -323,32 +324,31 @@ Install.prototype.checkInstallJson = function(){
 
   countBotsInstalled = botsInstalledJson.length;
   for(; idxBotsInstalled < countBotsInstalled; idxBotsInstalled++) {
-    if(botsInstalledJson[idxBotsInstalled].bot_folder == botToInstallJson.bot_folder) {
+    if(botsInstalledJson[idxBotsInstalled].bot_folder == this.botToInstallJson.bot_folder) {
       hasFolderProblem = true;
     }
 
-    if(botsInstalledJson[idxBotsInstalled].bot_name == botToInstallJson.bot_name) {
+    if(botsInstalledJson[idxBotsInstalled].bot_name == this.botToInstallJson.bot_name) {
       hasNameProblem = true;
     }
   }
 
-  this.logInfo('Bot Folder: ' + botToInstallJson.bot_folder);
-  this.logInfo('Bot Name: ' + botToInstallJson.bot_name);
+  this.logInfo('Bot Folder: ' + this.botToInstallJson.bot_folder);
+  this.logInfo('Bot Name: ' + this.botToInstallJson.bot_name);
 
   if(hasFolderProblem || hasNameProblem) {
-    this.resolveConflict(botToInstallJson, hasFolderProblem, hasNameProblem);
+    this.resolveConflict(hasFolderProblem, hasNameProblem);
   }
   else {
-    this.addNewBotToSavedBotsFile(botToInstallJson);
+    this.copyTempBotToFinalDestination();
   }
 };
 
-Install.prototype.resolveConflict = function(botToInstallJson, hasFolderProblem, hasNameProblem){
+Install.prototype.resolveConflict = function(hasFolderProblem, hasNameProblem){
   var that = this;
   var botsInstalledJson = JSON.parse(this.fs.readFileSync(this.botsInstalledFile, 'utf8'));
   var countBotsInstalled = botsInstalledJson.length;
   var idxBotsInstalled = 0;
-  var hasToAddBot = true;
   var foldersTaken = [];
   var namesTaken = [];
   var rl = require('readline').createInterface({
@@ -364,7 +364,7 @@ Install.prototype.resolveConflict = function(botToInstallJson, hasFolderProblem,
   }
 
   function eraseBot() {
-    hasToAddBot = false;
+    that.hasToAddBot = false;
     end();
   }
 
@@ -396,7 +396,7 @@ Install.prototype.resolveConflict = function(botToInstallJson, hasFolderProblem,
       }
 
       console.log('New folder is ' + answer);
-      botToInstallJson.bot_folder = answer;
+      that.botToInstallJson.bot_folder = answer;
 
       if(hasNameProblem) {
         changeName();
@@ -429,7 +429,7 @@ Install.prototype.resolveConflict = function(botToInstallJson, hasFolderProblem,
       }
 
       console.log('New name is ' + answer);
-      botToInstallJson.bot_name = answer;
+      that.botToInstallJson.bot_name = answer;
 
       end();
     });
@@ -456,11 +456,7 @@ Install.prototype.resolveConflict = function(botToInstallJson, hasFolderProblem,
     rl.clearLine(process.stdin);
     rl.close();
 
-    if(hasToAddBot) {
-      that.addNewBotToSavedBotsFile(botToInstallJson);
-    }
-
-    that.copyTempBotToFinalDestination(botToInstallJson);
+    that.copyTempBotToFinalDestination();
   }
   
   if(hasFolderProblem && hasNameProblem) {
@@ -479,19 +475,33 @@ Install.prototype.resolveConflict = function(botToInstallJson, hasFolderProblem,
   }
 };
 
-Install.prototype.addNewBotToSavedBotsFile = function(botToInstallJson) {
+Install.prototype.addBotToSavedBotsFile = function() {
+  if(this.hasToAddBot) {
+    this.addNewBotToSavedBotsFile();
+  }
+  else {
+    //
+  }
+};
+
+Install.prototype.addNewBotToSavedBotsFile = function() {
   var botsInstalledJson = JSON.parse(this.fs.readFileSync(this.botsInstalledFile, 'utf8'));
-  botsInstalledJson.push(botToInstallJson);
+
+  this.botToInstallJson.configurations = [];
+  this.botToInstallJson.configurations.push(this.botToInstallJson.configuration);
+  delete this.botToInstallJson.configuration;
+
+  botsInstalledJson.push(this.botToInstallJson);
   this.fs.writeFileSync(this.botsInstalledFile, JSON.stringify(botsInstalledJson), 'utf8');
 };
 
-Install.prototype.copyTempBotToFinalDestination = function(botToInstallJson) {
+Install.prototype.copyTempBotToFinalDestination = function() {
   var countFoldersToCreate = this.foldersToCreate.length;
   var idxFoldersToCreate = 0;
   var folder;
 
   for(; idxFoldersToCreate < countFoldersToCreate; idxFoldersToCreate++) {
-    folder = this.rootFolder + '/' + this.foldersToCreate[idxFoldersToCreate] + '/' + botToInstallJson.bot_name;
+    folder = this.rootFolder + '/' + this.foldersToCreate[idxFoldersToCreate] + '/' + this.botToInstallJson.bot_name;
     if (this.isFileExists(folder) === false || this.isFileExists(folder).isDirectory() === false) {
       try {
         this.fs.mkdirSync(folder);
@@ -504,20 +514,16 @@ Install.prototype.copyTempBotToFinalDestination = function(botToInstallJson) {
     this.copyFilesRecursive(this.tempBotFolder + '/' + this.foldersToCreate[idxFoldersToCreate], folder, 0);
   }
 
-  this.launchPackageJson(this.tempBotFolder);
+  this.launchPackageJson();
 
-  this.logInfo('New bot "' + botToInstallJson.bot_name + '" is installed in folder "' + botToInstallJson.bot_folder + '"');
+  this.logInfo('New bot "' + this.botToInstallJson.bot_name + '" is installed in folder "' + this.botToInstallJson.bot_folder + '"');
 
-  if(botToInstallJson.configuration === undefined) {
+  if(this.botToInstallJson.configuration === undefined) {
     this.logInfo('No configuration to setup');
+    this.addBotToSavedBotsFile();
   }
   else {
-    if(this.isFileExists(this.rootFolder + '/configurations/' + botToInstallJson.bot_folder + '/configuration.json') === false) {
-      this.launchSetupConfiguration(botToInstallJson, 'create');
-    }
-    else {
-      this.resolveConflictConfiguration(botToInstallJson);
-    }
+    this.launchSetupConfiguration('add');
   }
 };
 
@@ -560,12 +566,15 @@ Install.prototype.copyFilesRecursive = function(srcPath, destPath, depth) {
   }
 };
 
-Install.prototype.launchPackageJson = function(folder) {
-  if(this.isFileExists(folder + '/package.json')) {
-    this.logInfo('Launch package.json from "' + folder + '"');
-    console.log(folder + '/package.json');
-    var exec = require('child_process').exec;
-    exec('npm install', {cwd : folder}, function(error, stdout, stderr) {
+Install.prototype.launchPackageJson = function() {
+  var exec = require('child_process').exec;
+  var packages;
+
+  if(this.botToInstallJson.packages !== undefined) {
+    packages = this.botToInstallJson.packages.join(' ');
+
+    this.logInfo('Install packages "' + packages + '"');
+    exec('npm install ' + packages, {cwd : this.rootFolder}, function(error, stdout, stderr) {
       if (error) {
         console.error('exec error: ' + error);
         return;
@@ -574,31 +583,39 @@ Install.prototype.launchPackageJson = function(folder) {
   }
 };
 
-Install.prototype.launchSetupConfiguration = function(botToInstallJson, modificationType) {
+Install.prototype.launchSetupConfiguration = function(modificationType) {
   var that = this;
   var idxGlobal = 0;
   var len = 0;
   var propsKeys = [];
   var propsValues = [];
-  var configurationFileJson = [];
-  var countConfigurationFiles;
-  var nameConfTaken = [];
+  var botsInstalledFileJson = [];
+  var countBotsInstalled;
+  var configurationNameTaken = [];
+  var idxConfigurationNames;
+  var configuration;
+  var question;
+  var key;
   var rl = require('readline').createInterface({
     input: process.stdin,
     output: process.stdout
   });
 
-  if(botToInstallJson.configuration.name === undefined) {
+  if(this.botToInstallJson.configuration.name === undefined) {
     this.stopProcess('Name missing in configuration file');
   }
 
   rl.clearLine(process.stdin);
 
   if(modificationType === 'add') {
-    configurationFileJson = JSON.parse(that.fs.readFileSync(that.rootFolder + '/configurations/' + botToInstallJson.bot_folder + '/configuration.json', 'utf8'));
-    countConfigurationFiles = configurationFileJson.length;
-    for(idxGlobal = 0; idxGlobal < countConfigurationFiles; idxGlobal++) {
-      nameConfTaken.push(configurationFileJson[idxGlobal].name);
+    botsInstalledFileJson = JSON.parse(that.fs.readFileSync(this.botsInstalledFile, 'utf8'));
+    countBotsInstalled = botsInstalledFileJson.length;
+    for(idxGlobal = 0; idxGlobal < countBotsInstalled; idxGlobal++) {
+      if(this.botToInstallJson.bot_name == botsInstalledFileJson[idxGlobal].bot_name) {
+        for(idxConfigurationNames = 0; idxConfigurationNames < botsInstalledFileJson[idxGlobal].configurations.length; idxConfigurationNames++) {
+          configurationNameTaken.push(botsInstalledFileJson[idxGlobal].configurations[idxConfigurationNames].name);
+        }
+      }
     }
   }
   idxGlobal = 0;
@@ -609,13 +626,13 @@ Install.prototype.launchSetupConfiguration = function(botToInstallJson, modifica
       return;
     }
 
-    var question = 'Value for ' + propsKeys[idxGlobal] + ' ? ';
+    question = 'Value for ' + propsKeys[idxGlobal] + ' ? ';
     if(propsValues[idxGlobal] === 'array') {
       question = 'Value for ' + propsKeys[idxGlobal] + ' (separate words with space) ? ';
     }
     
-    if(propsKeys[idxGlobal] === 'name' && modificationType === 'add' && nameConfTaken.length > 0) {
-      console.log('List of name already taken: ' + nameConfTaken.join(' , '));
+    if(propsKeys[idxGlobal] === 'name' && modificationType === 'add' && configurationNameTaken.length > 0) {
+      console.log('List of name already taken: ' + configurationNameTaken.join(' , '));
     }
     
     rl.question(question, function(answer){
@@ -626,7 +643,7 @@ Install.prototype.launchSetupConfiguration = function(botToInstallJson, modifica
           setConfigurationValue();
           return;
         }
-        else if(nameConfTaken.indexOf(answer) !== -1) {
+        else if(configurationNameTaken.indexOf(answer) !== -1) {
           console.log('Name must be unique');
           setConfigurationValue();
           return;
@@ -649,11 +666,11 @@ Install.prototype.launchSetupConfiguration = function(botToInstallJson, modifica
     });
   }
 
-  var configuration = botToInstallJson.configuration;
-  for(var key in botToInstallJson.configuration) {
-    if(botToInstallJson.configuration.hasOwnProperty(key)) {
+  configuration = this.botToInstallJson.configuration;
+  for(key in this.botToInstallJson.configuration) {
+    if(this.botToInstallJson.configuration.hasOwnProperty(key)) {
       propsKeys.push(key);
-      propsValues.push(botToInstallJson.configuration[key]);
+      propsValues.push(this.botToInstallJson.configuration[key]);
       len++;
     }
   }
@@ -667,7 +684,8 @@ Install.prototype.launchSetupConfiguration = function(botToInstallJson, modifica
     }
     rl.clearLine(process.stdin);
     rl.close();
-    configurationFileJson.push(configuration);
+
+    that.addBotToSavedBotsFile();
 
     that.endInstall();
   }
@@ -676,7 +694,7 @@ Install.prototype.launchSetupConfiguration = function(botToInstallJson, modifica
   setConfigurationValue();
 };
 
-Install.prototype.resolveConflictConfiguration = function(botToInstallJson) {
+Install.prototype.resolveConflictConfiguration = function() {
   var that = this;
   var rl = require('readline').createInterface({
     input: process.stdin,
@@ -689,12 +707,12 @@ Install.prototype.resolveConflictConfiguration = function(botToInstallJson) {
       if(answer === 'a') {
         rl.clearLine(process.stdin);
         rl.close();
-        that.launchSetupConfiguration(botToInstallJson, 'add');
+        that.launchSetupConfiguration(this.botToInstallJson, 'add');
       }
       else if(answer === 'e') {
         rl.clearLine(process.stdin);
         rl.close();
-        that.launchSetupConfiguration(botToInstallJson, 'erase');
+        that.launchSetupConfiguration(this.botToInstallJson, 'erase');
       }
       else if(answer === 'q') {
         rl.close();
