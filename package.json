@@ -2,7 +2,7 @@
   "name": "rmasterbot",
   "version": "1.0.0",
   "description": "RMasterBot",
-  "main": "./",
+  "main": "rmasterbot.js",
   "directories": {
     "doc": "docs"
   },
