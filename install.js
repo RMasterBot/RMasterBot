@@ -805,4 +805,9 @@ Install.prototype.stopProcess = function(exception){
   process.exit(-1);
 };
 
+Install.prototype.cleanup = function() {
+  this.deleteFolderRecursive(this.tempBotFolder);
+
+};
+
 new Install();
