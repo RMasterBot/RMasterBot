@@ -1,4 +1,5 @@
 function RMasterBot(botName, configuration) {
+  this.standalone = this.isStandalone();
   this.bot = null;
   this.bots = [];
   this.botsFile = __dirname + '/bots.json';
@@ -10,6 +11,10 @@ function RMasterBot(botName, configuration) {
     this.createBot(botName, configuration);
   }
 }
+
+RMasterBot.prototype.isStandalone = function() {
+  return module.id.indexOf('node_modules') === -1;
+};
 
 RMasterBot.prototype.getBot = function(){
   return this.bot;

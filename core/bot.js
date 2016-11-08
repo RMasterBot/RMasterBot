@@ -27,10 +27,15 @@ function Bot(name, folder, allConfigurations){
   this.defaultRemainingTime = 60*60;
 
   this.convertLastAccessInMilliseconds = true;
+  this.standalone = this.isStandalone();
 }
 
 Bot.prototype = new Request();
 Bot.prototype.constructor = Bot;
+
+Bot.prototype.isStandalone = function() {
+  return module.id.indexOf('node_modules') === -1;
+};
 
 Bot.prototype.getName = function() {
   return this.name;
