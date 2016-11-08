@@ -622,10 +622,9 @@ Install.prototype.launchPackageJson = function() {
     packages = this.botToInstallJson.packages.join(' ');
 
     this.logInfo('Install packages "' + packages + '"');
-    exec('npm install ' + packages, {cwd : this.rootFolder}, function(error, stdout, stderr) {
+    exec('npm install ' + packages, {cwd : this.rootFolder}, function(error) {
       if (error) {
         console.error('exec error: ' + error);
-        return;
       }
     });
   }
@@ -783,6 +782,7 @@ Install.prototype.resolveConflictConfiguration = function() {
 };
 
 Install.prototype.endInstall = function() {
+  this.cleanup();
   this.logInfo('Done');
   process.exit(0);
 };
@@ -801,13 +801,16 @@ Install.prototype.logInfo = function(string) {
 };
 
 Install.prototype.stopProcess = function(exception){
+  this.cleanup();
   this.log.error('RMasterBot', exception);
   process.exit(-1);
 };
 
 Install.prototype.cleanup = function() {
   this.deleteFolderRecursive(this.tempBotFolder);
-
+  if (this.isFileExists(this.zipFilepath)) {
+    this.fs.unlinkSync(this.zipFilepath);
+  }
 };
 
 new Install();
