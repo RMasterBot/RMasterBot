@@ -800,9 +800,9 @@ Install.prototype.logInfo = function(string) {
   this.log.info('RMasterBot', string);
 };
 
-Install.prototype.stopProcess = function(exception){
+Install.prototype.stopProcess = function(exitMessage){
   this.cleanup();
-  this.log.error('RMasterBot', exception);
+  this.log.error('RMasterBot', exitMessage);
   process.exit(-1);
 };
 
