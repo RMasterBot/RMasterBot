@@ -1,4 +1,5 @@
 function Install() {
+  this.isInteractifMode = false;
   this.botToInstall = null;
   this.botType = null;
   this.log = require('npmlog');
@@ -9,6 +10,7 @@ function Install() {
   this.tempBotFolder = this.rootFolder + '/_bot';
   this.botsInstalledFile = this.rootFolder + '/bots.json';
   this.installFileFromNewBot = this.tempBotFolder + '/install.json';
+  this.nodeModulesFolder = this.getNodeModulesFolder();
   this.foldersSupported = ['applications', 'docs', 'jobs', 'models'];
   this.foldersToCreate = ['access_tokens', 'applications', 'docs', 'downloads', 'jobs', 'models', 'private_jobs', 'process_ids', 'rate_limits'];
   this.maxDepthCopyFolder = 3;
@@ -18,9 +20,24 @@ function Install() {
   this.choiceConflictConfiguration = null;
 
   this.getArguments();
-  this.detectBotType();
-  this.downloadBot();
 }
+
+Install.prototype.getNodeModulesFolder = function() {
+  if(this.isStandalone()) {
+    return this.rootFolder;
+  }
+
+  var _tmp = [];
+  var parts = __dirname.split(require('path').sep);
+  for(var idx = 0 ; idx < parts.length-2; idx++) {
+    _tmp.push(parts[idx]);
+  }
+  return _tmp.join(require('path').sep);
+};
+
+Install.prototype.isStandalone = function() {
+  return __filename.indexOf('node_modules') === -1;
+};
 
 Install.prototype.getArguments = function(){
   var countArguments = process.argv.length;
@@ -36,15 +53,61 @@ Install.prototype.getArguments = function(){
   }
 
   if(this.botToInstall === null) {
-    this.stopProcess('No argument provided');
+    this.isInteractifMode = true;
+    this.askBotToInstall();
   }
-
-  this.logInfo('Bot to install: ' + this.botToInstall);
+  else {
+    this.detectBotType();
+    this.logInfo('Bot to install: ' + this.botToInstall);
+  }
 };
 
 Install.prototype.showHelp = function(){
   require(__dirname + '/helps/install.js');
   process.exit(1);
+};
+
+Install.prototype.askBotToInstall = function() {
+  var that = this;
+  var question = "To install a bot you can enter:\n";
+  question += "  -> the name from RMasterBot list (see the list in README)\n";
+  question += "  -> from github like that: github_account_name/repository_name\n";
+  question += "  -> an url (http or https)\n";
+  question += "or quit (q)\n";
+  var rl = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+  rl.clearLine(process.stdin);
+
+  function ask(){
+    rl.question(question, function(answer){
+      if(answer === 'q') {
+        rl.clearLine(process.stdin);
+        rl.close();
+        that.stopProcess('Stopped by user');
+      }
+
+      answer = answer.trim();
+      if(answer.length < 1) {
+        ask();
+      }
+      else {
+        that.botToInstall = answer;
+        if (that.detectBotType() === false) {
+          that.logInfo("Type Bot not detected");
+          ask();
+        }
+        else {
+          rl.clearLine(process.stdin);
+          rl.close();
+          that.downloadBot();
+        }
+      }
+    });
+  }
+
+  ask();
 };
 
 Install.prototype.detectBotType = function() {
@@ -63,10 +126,21 @@ Install.prototype.detectBotType = function() {
     this.botType = 'RMasterBot'
   }
   else {
-    this.stopProcess('Type Bot not detected');
+    if(!this.isInteractifMode) {
+      this.stopProcess('Type Bot not detected');
+    }
+    else {
+      return false;
+    }
   }
 
   this.logInfo('Type Bot: ' + this.botType);
+  if(!this.isInteractifMode) {
+    this.downloadBot();
+  }
+  else {
+    return true;
+  }
 };
 
 Install.prototype.downloadBot = function(options){
@@ -557,8 +631,6 @@ Install.prototype.copyTempBotToFinalDestination = function() {
     this.copyFilesRecursive(this.tempBotFolder + '/' + this.foldersToCreate[idxFoldersToCreate], folder, 0);
   }
 
-  this.launchPackageJson();
-
   this.logInfo('New bot "' + this.botToInstallJson.bot_name + '" is installed in folder "' + this.botToInstallJson.bot_folder + '"');
 
   if(this.botToInstallJson.configuration === undefined) {
@@ -615,18 +687,15 @@ Install.prototype.copyFilesRecursive = function(srcPath, destPath, depth) {
 };
 
 Install.prototype.launchPackageJson = function() {
-  var exec = require('child_process').exec;
+  var spawn = require('cross-spawn');
   var packages;
 
   if(this.botToInstallJson.packages !== undefined) {
-    packages = this.botToInstallJson.packages.join(' ');
+    var args = ['install'];
+    args = args.concat(this.botToInstallJson.packages);
 
-    this.logInfo('Install packages "' + packages + '"');
-    exec('npm install ' + packages, {cwd : this.rootFolder}, function(error) {
-      if (error) {
-        console.error('exec error: ' + error);
-      }
-    });
+    this.logInfo('Install packages "' + this.botToInstallJson.packages.join(' ') + '"');
+    spawn.sync('npm', args, { cwd : this.nodeModulesFolder, stdio: 'inherit' });
   }
 };
 
@@ -647,12 +716,11 @@ Install.prototype.launchSetupConfiguration = function(modificationType) {
     input: process.stdin,
     output: process.stdout
   });
+  rl.clearLine(process.stdin);
 
   if(this.botToInstallJson.configuration.name === undefined) {
     this.stopProcess('Name missing in configuration file');
   }
-
-  rl.clearLine(process.stdin);
 
   if(modificationType === 'add') {
     botsInstalledFileJson = JSON.parse(that.fs.readFileSync(this.botsInstalledFile, 'utf8'));
@@ -782,6 +850,7 @@ Install.prototype.resolveConflictConfiguration = function() {
 };
 
 Install.prototype.endInstall = function() {
+  this.launchPackageJson();
   this.cleanup();
   this.logInfo('Done');
   process.exit(0);
