@@ -216,7 +216,7 @@ Install.prototype.getOptions = function(){
   }
   else if(this.botType === 'RMasterBot') {
     host = 'github.com';
-    path = '/rancoud/R' + this.botToInstall + 'Bot/zipball/master';
+    path = '/rancoud/RMB' + this.botToInstall + '/zipball/master';
   }
 
   return {
