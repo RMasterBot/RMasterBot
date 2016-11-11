@@ -1,6 +1,6 @@
 # RMasterBot
 
-Master of all bots.
+Master of all bots.  
 It'a NodeJs project, usable on all platforms.
 
 ![nodejs](https://img.shields.io/badge/node-%3E=4.4.4-brightgreen.svg) ![nodejs](https://img.shields.io/badge/npm-%3E=3.9.5-brightgreen.svg) ![licence mit](https://img.shields.io/badge/License-MIT-blue.svg)
@@ -17,7 +17,7 @@ Then you can install a bot like this:
 cd node_modules/rmasterbot
 node install Pinterest
 ```
-It will download files.
+It will download files.  
 You will be prompt to configure your bot with an application.
 
 ### Standalone
@@ -29,7 +29,7 @@ Then you can install a bot like this:
 ```
 node install Pinterest  
 ```
-It will download files.
+It will download files.  
 You will be prompt to configure your bot with an application.
 
 *If you want to develop your custom bot you can see the developer section*
@@ -45,7 +45,7 @@ If you want to develop your custom bot, you have to create thoses directories/fi
 * models
     * models for convert json into js classes
 
-You have to add a single file *install.json* placed at the root.
+You have to add a single file *install.json* placed at the root.  
 It will contain, bot name, bot folder, configuration setup and additionals packages:
 ```
 {
