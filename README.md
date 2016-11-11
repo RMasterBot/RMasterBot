@@ -71,4 +71,4 @@ You can attach a name for your custom bot like pin for pinterest in bots.json
 * Pinterest
 
 ## LICENCE
-[MIT](../master/LICENSE)
+[MIT](../master/LICENCE)
