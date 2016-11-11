@@ -14,7 +14,7 @@
     "url": "git+https://github.com/rancoud/RMasterBot.git"
   },
   "author": "Rancoud",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/rancoud/RMasterBot/issues"
   },
