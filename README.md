@@ -2,6 +2,19 @@
 Master of all bots
 
 ## Installation
+### Node module
+```
+npm install rmasterbot
+```
+Then you can install a bot like this:
+```
+cd node_modules/rmasterbot
+node install Pinterest
+```
+It will donwload files.
+You will be prompt to configure your bot with an application.
+
+### Standalone
 Download repository, then go to directory with your console and do:  
 ```
 npm install
@@ -17,20 +30,33 @@ You will be prompt to configure your bot with an application.
 
 ## Developer
 If you want to develop your custom bot, you have to create thoses directories/files:
-* application
-    * app.js
-    * limit.js
-    * api.js
-    * log.js
-* configurations
-    * configuration.js
-    * setup.js
+* applications
+    * main.js
 * docs
     * api.js
 * jobs
     * if you have jobs you can add files here
 * models
-    * a model for convert json into js classes
+    * models for convert json into js classes
+You have to add a single file 'install.json' placed at the root.
+It will contain, bot name and forlder, configuration setup and additionals packages:
+```
+{
+  "bot_name" : "test",
+  "bot_folder" : "test",
+  "configuration" : {
+    "name":"string",
+    "key":"string",
+    "secret":"string",
+    "access_token":"string",
+    "callback_url":"string",
+    "scope":"string"
+  },
+  "packages" : [
+    "no-op@1.0.3"
+  ]
+}
+```
 
 If you want to test you can install your bot in RMasterBot with this command:
 ```
