@@ -13,6 +13,7 @@ function Bot(name, folder, allConfigurations){
   this.modelsFolder =  __dirname + '/../models/' + this.folder + '/';
   this.privateJobsFolder =  __dirname + '/../private_jobs/' + this.folder + '/';
   this.jobsFolder =  __dirname + '/../jobs/' + this.folder + '/';
+  this.processIdsFolder =  __dirname + '/../process_ids/' + this.folder + '/';
 
   this.models = {};
   this.useModels = true;
