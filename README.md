@@ -74,7 +74,7 @@ node install github_account_name/repository_name
 You can attach a name for your custom bot like pin for pinterest in bots.json
 
 ## Bots Done
-* Pinterest
+* [Pinterest](https://github.com/rancoud/RMBPinterest)
 
 ## LICENCE
 [MIT](../master/LICENCE)
