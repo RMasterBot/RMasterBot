@@ -14,6 +14,7 @@ function Job() {
 
   this.getArguments();
   this.loadBot();
+  this.setupPid();
   this.launchJob();
 }
 
@@ -138,6 +139,22 @@ Job.prototype.loadBot = function() {
     this.logInfo('User to use: ' + this.global.user);
     this.botConfigured.loadUserAccessTokenByUser(this.global.user);
   }
+};
+
+Job.prototype.setupPid = function() {
+  var that = this;
+
+  require('fs').writeFileSync(this.botConfigured.processIdsFolder + process.pid + '.pid', process.argv.join(' '), 'utf-8');
+
+  process.on('exit', function() {
+    require('npmlog').info('RMasterBot', "End");
+
+    try {
+      require('fs').unlinkSync(that.botConfigured.processIdsFolder + process.pid + '.pid');
+    } catch (e) {
+      //
+    }
+  });
 };
 
 Job.prototype.launchJob = function() {
