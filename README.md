@@ -1,5 +1,10 @@
 # RMasterBot
 Master of all bots
+It'a NodeJs project, usable on all platforms
+
+![nodejs](https://img.shields.io/badge/node-%3E=4.4.4-brightgreen.svg) ![nodejs](https://img.shields.io/badge/npm-%3E=3.9.5-brightgreen.svg) ![licence mit](https://img.shields.io/badge/License-MIT-blue.svg)
+
+![npm install rmasterbot](https://nodei.co/npm/rmasterbot.png "npm install rmasterbot")
 
 ## Installation
 ### NPM
