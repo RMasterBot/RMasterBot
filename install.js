@@ -699,7 +699,7 @@ Install.prototype.launchPackageJson = function() {
   var spawn = require('cross-spawn');
   var packages;
 
-  if(this.botToInstallJson.packages !== undefined) {
+  if(this.botToInstallJson.packages !== undefined && this.botToInstallJson.packages.length > 0) {
     var args = ['install'];
     args = args.concat(this.botToInstallJson.packages);
 
