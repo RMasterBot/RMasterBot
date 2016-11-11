@@ -38,8 +38,9 @@ If you want to develop your custom bot, you have to create thoses directories/fi
     * if you have jobs you can add files here
 * models
     * models for convert json into js classes
-You have to add a single file 'install.json' placed at the root.
-It will contain, bot name and forlder, configuration setup and additionals packages:
+
+You have to add a single file *install.json* placed at the root.
+It will contain, bot name, bot folder, configuration setup and additionals packages:
 ```
 {
   "bot_name" : "test",
@@ -65,5 +66,6 @@ node install github_account_name/repository_name
 ```
 
 You can attach a name for your custom bot like pin for pinterest in bots.json
-## Bots
+
+## Bots Done
 * Pinterest
