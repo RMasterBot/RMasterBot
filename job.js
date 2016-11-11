@@ -1,33 +1,19 @@
 function Job() {
-  this.log = require('npmlog');
-  this.fs = require('fs');
-
+  this.rmasterbot = require('./rmasterbot');
   this.bot = null;
   this.job = null;
-  this.rootFolder = __dirname;
   this.arguments = [];
-  this.botFolder = null;
-  this.foldersToLoad = ['applications', 'models'];
 
   this.global = {
     app : null,
     user : null,
-    file : null
+    output : null
   };
 
-  this.jobFile = null;
+  this.botConfigured = null;
 
   this.getArguments();
-  this.getBotFolder();
-  
-  this.logInfo('Search job: ' + this.job);
-  
-  this.foundPrivateJob();
-  this.foundJob();
-
-  this.loadCore();
   this.loadBot();
-
   this.launchJob();
 }
 
@@ -55,13 +41,13 @@ Job.prototype.getArguments = function() {
         this.stopProcess('Missing argument user');
       }
     }
-    else if(process.argv[i] === '-f' || process.argv[i] === '--file') {
+    else if(process.argv[i] === '-o' || process.argv[i] === '--output') {
       i++;
       if(i < countArguments) {
-        this.global.file = process.argv[i];
+        this.global.output = process.argv[i];
       }
       else {
-        this.stopProcess('Missing argument file');
+        this.stopProcess('Missing argument output file');
       }
     }
     else if(this.bot === null) {
@@ -88,107 +74,106 @@ Job.prototype.getArguments = function() {
 };
 
 Job.prototype.showHelp = function() {
-  require(__dirname + '/helps/job.js');
+  if(this.job === null) {
+    console.log("\n" + 'Launch Job (dedicated task). It will create a pid file.');
+
+    console.log("\n" + 'Usage:');
+    console.log("    " + 'node job <application> <job_name> [options]   launch job given');
+
+    console.log("\n" + 'Options:');
+    console.log("    " + 'application             use specific application network');
+    console.log("    " + 'job_name                job file to load (see informations below)');
+    console.log("    " + 'options                 different depending on job');
+    console.log("    " + '-a --app <app_name>     use specific app by using name defined in conf');
+    console.log("    " + '-u --user <user_name>   use specific user access_token');
+    console.log("    " + '-o --output <filepath>  save the output in a file');
+
+    console.log("\n" + 'Informations:');
+    console.log("    " + 'Job name is filename without .js');
+    console.log("    " + 'Folder scan priority is private_jobs then jobs');
+  }
+  else {
+    this.loadBot();
+    var content = null;
+    if(this.isFileExists(this.botConfigured.privateJobsFolder + this.job + '.js')) {
+      content = require('fs').readFileSync(this.botConfigured.privateJobsFolder + this.job + '.js', 'utf-8');
+    }
+    else if(this.isFileExists(this.botConfigured.jobsFolder + this.job + '.js')) {
+      content = require('fs').readFileSync(this.botConfigured.jobsFolder + this.job + '.js', 'utf-8');
+    }
+    else {
+      console.log('Job not found');
+      process.exit(1);
+    }
+
+    if(content.substr(0,2) !== '/*') {
+      console.log('No doc found for this job');
+      process.exit(1);
+    }
+
+    var startPos = 2;
+    var stopPos = content.indexOf('*/');
+    if(stopPos === -1) {
+      stopPos = content.length;
+    }
+    else {
+      stopPos = stopPos - startPos;
+    }
+
+    console.log(content.substr(startPos, stopPos));
+  }
   process.exit(1);
 };
 
-Job.prototype.getBotFolder = function() {
-  if(this.isFileExists(this.rootFolder + '/bots.json') === false) {
-    this.stopProcess('No bots installed');
-  }
-
-  var bots = JSON.parse(this.fs.readFileSync(this.rootFolder + '/bots.json', 'utf-8'));
-  var len = bots.length;
-  var i;
-  for(i = 0; i < len; i++) {
-    if(this.bot.toLowerCase() === bots[i].bot_name.toLowerCase()) {
-      this.botFolder = bots[i].bot_folder;
-      return;
-    }
-  }
-
-  this.stopProcess('Bot not found');
-};
-
-Job.prototype.foundPrivateJob = function() {
-  var privateJobsFolder = this.rootFolder + '/private_jobs/' + this.botFolder + '/';
-  var files = this.fs.readdirSync(privateJobsFolder);
-  var len = files.length;
-  var i;
-
-  for(i = 0; i < len; i++) {
-    if(files[i].toLowerCase().replace('.js', '') === this.job.toLowerCase().replace('.js', '')) {
-      this.jobFile = privateJobsFolder + files[i];
-      break;
-    }
-  }
-};
-
-Job.prototype.foundJob = function() {
-  if(this.jobFile !== null) {
-    return;
-  }
-
-  var jobsFolder = this.rootFolder + '/jobs/' + this.botFolder + '/';
-  var files = this.fs.readdirSync(jobsFolder);
-  var len = files.length;
-  var i;
-
-  for(i = 0; i < len; i++) {
-    if(files[i].toLowerCase().replace('.js', '') === this.job.toLowerCase().replace('.js', '')) {
-      this.jobFile = jobsFolder + files[i];
-      break;
-    }
-  }
-};
-
-Job.prototype.loadCore = function() {
-  var files;
-  var lenFiles;
-  var i;
-
-  files = this.fs.readdirSync(this.rootFolder + '/core/');
-  lenFiles = files.length;
-  for(i = 0; i < lenFiles; i++) {
-    console.log(this.rootFolder + '/core/' + files[i]);
-    require(this.rootFolder + '/core/' + files[i]);
-  }
-};
-
 Job.prototype.loadBot = function() {
-  var len = this.foldersToLoad.length;
-  var i;
-  
-  for(i = 0; i < len; i++) {
-    this.loadFiles(this.foldersToLoad[i]);
+  if(this.global.app !== null) {
+    this.logInfo('Application to use: ' + this.global.app);
+    this.botConfigured = this.rmasterbot.getBot(this.bot, this.global.app);
   }
-};
+  else {
+    this.botConfigured = this.rmasterbot.getBot(this.bot);
+  }
 
-Job.prototype.loadFiles = function(folder) {
-  var dirpath = this.rootFolder + '/' + folder + '/' + this.botFolder + '/';
-  var files;
-  var lenFiles;
-  var i;
-  
-  files = this.fs.readdirSync(dirpath);
-  lenFiles = files.length;
-  for(i = 0; i < lenFiles; i++) {
-    console.log(dirpath + files[i]);
-    require(dirpath + files[i]);
+  if(this.global.user !== null) {
+    this.logInfo('User to use: ' + this.global.user);
+    this.botConfigured.loadUserAccessTokenByUser(this.global.user);
   }
 };
 
 Job.prototype.launchJob = function() {
-  if(this.jobFile === null) {
-    this.stopProcess('Job not found');
-  }
+  var that = this;
+  this.rmasterbot.doBotJob(this.botConfigured, this.job, this.arguments, function(error,data){
+    if(error) {
+      require('npmlog').error('RMasterBot', "ERROR");
+      that.treatResult(error);
+    }
+    else {
+      require('npmlog').info('RMasterBot', "SUCCESS");
+      that.treatResult(data);
+    }
+  });
+};
 
-  require(this.jobFile);
+Job.prototype.treatResult = function(result) {
+  if(this.global.output === null) {
+    this.showResult(result);
+  }
+  else {
+    this.saveResult(result);
+  }
+};
+
+Job.prototype.showResult = function(result) {
+  console.log(require('util').inspect(result, false, null, true));
+};
+
+Job.prototype.saveResult = function(result) {
+  require('fs').writeFileSync(this.global.output, JSON.stringify(result));
 };
 
 Job.prototype.isFileExists = function(path) {
   try {
-    return this.fs.lstatSync(path);
+    return require('fs').lstatSync(path);
   }
   catch(e){
     return false;
@@ -196,11 +181,11 @@ Job.prototype.isFileExists = function(path) {
 };
 
 Job.prototype.logInfo = function(string) {
-  this.log.info('RMasterBot', string);
+  require('npmlog').info('RMasterBot', string);
 };
 
 Job.prototype.stopProcess = function(exception) {
-  this.log.error('RMasterBot', exception);
+  require('npmlog').error('RMasterBot', exception);
   process.exit(-1);
 };
 
