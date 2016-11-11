@@ -69,3 +69,6 @@ You can attach a name for your custom bot like pin for pinterest in bots.json
 
 ## Bots Done
 * Pinterest
+
+## LICENCE
+[LICENCE](../blob/master/LICENSE)
