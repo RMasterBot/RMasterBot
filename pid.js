@@ -106,6 +106,7 @@ Pid.prototype.showHelp = function() {
   console.log("\n" + 'Options:');
   console.log("    " + 'pid    process id');
   console.log("    " + 'bot    name of the bot');
+
   process.exit(1);
 };
 

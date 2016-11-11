@@ -72,6 +72,7 @@ Install.prototype.showHelp = function(){
   console.log("\n" + 'Arguments:');
   console.log("    " + 'bot_name    bot name from RMasterBot list: check in README');
   console.log("    " + 'url         url to a zip file built for RMasterBot OR just github_account_name/repository_name');
+
   process.exit(1);
 };
 

@@ -123,6 +123,7 @@ Job.prototype.showHelp = function() {
 
     console.log(content.substr(startPos, stopPos));
   }
+
   process.exit(1);
 };
 
