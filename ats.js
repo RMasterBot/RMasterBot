@@ -23,6 +23,7 @@ Ats.prototype.showHelp = function() {
   console.log("    " + 'app_name       use specific app by using name defined in conf');
   console.log("    " + 'port           use specific port for server');
   console.log("    " + 'scopes         list of scopes used for user and app');
+
   process.exit(1);
 };
 
