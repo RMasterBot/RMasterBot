@@ -2,7 +2,7 @@
 Master of all bots
 
 ## Installation
-### Node module
+### NPM
 ```
 npm install rmasterbot
 ```
