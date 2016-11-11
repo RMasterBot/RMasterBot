@@ -11,7 +11,7 @@ Then you can install a bot like this:
 cd node_modules/rmasterbot
 node install Pinterest
 ```
-It will donwload files.
+It will download files.
 You will be prompt to configure your bot with an application.
 
 ### Standalone
@@ -23,7 +23,7 @@ Then you can install a bot like this:
 ```
 node install Pinterest  
 ```
-It will donwload files.  
+It will download files.
 You will be prompt to configure your bot with an application.
 
 *If you want to develop your custom bot you can see the developer section*
