@@ -122,7 +122,7 @@ Doc.prototype.displayDetailsEndpoint = function(endpoint) {
   console.log(endpoint.method.toUpperCase().green + ' ' + endpoint.url.magenta + "\nScope: ".cyan + endpoint.scope + "\nDescription: ".cyan + endpoint.description);
 
   this.displayParametersRequired(endpoint.parameters.required);
-  this.displayParametersOptionnal(endpoint.parameters.optionnal);
+  this.displayParametersOptional(endpoint.parameters.optional);
 };
 
 Doc.prototype.displayParametersRequired = function(parameters) {
@@ -145,12 +145,12 @@ Doc.prototype.displayParametersRequired = function(parameters) {
   }
 };
 
-Doc.prototype.displayParametersOptionnal = function(parameters) {
+Doc.prototype.displayParametersOptional = function(parameters) {
   if(parameters.length === 0) {
     return;
   }
 
-  console.log("\n"+'Parameters optionnal:');
+  console.log("\n"+'Parameters optional:');
   for (var i = 0; i < parameters.length; i++) {
     if(typeof parameters[i] === 'string') {
       for (var j = 0; j < api.parameters.length; j++) {
