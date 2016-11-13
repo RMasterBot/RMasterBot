@@ -5,6 +5,10 @@ function Doc() {
   this.botConfigured = null;
   this.api = {};
 
+  this.methods = ["checkout", "connect", "copy", "delete", "get", "head", "link", "lock", "m-search", "merge",
+    "mkactivity", "mkcalendar", "mkcol", "move", "notify", "options", "patch", "post", "propfind", "proppatch", "purge",
+    "put", "report", "search", "subscribe", "trace", "unlink", "unlock", "unsubscribe","view"];
+
   this.extractArguments();
   this.loadBot();
   this.loadDoc();
@@ -63,34 +67,18 @@ Doc.prototype.showDoc = function() {
     return;
   }
 
-  if(this.arguments[0] === 'get') {
+  var methodIndex = this.methods.indexOf(this.arguments[0]);
+  if(methodIndex !== -1) {
     if(this.arguments.length < 2) {
       for (i = 0; i < api.endpoints.length; i++) {
-        if(api.endpoints[i].method === 'get') {
+        if(api.endpoints[i].method === this.methods[methodIndex]) {
           this.displayEndpoint(api.endpoints[i]);
         }
       }
     }
     else {
       for (i = 0; i < api.endpoints.length; i++) {
-        if(api.endpoints[i].url === this.arguments[1]) {
-          this.displayDetailsEndpoint(api.endpoints[i]);
-          return;
-        }
-      }
-    }
-  }
-  else if(this.arguments[0] === 'post') {
-    if(this.arguments.length < 2) {
-      for (i = 0; i < api.endpoints.length; i++) {
-        if(api.endpoints[i].method === 'post') {
-          this.displayEndpoint(api.endpoints[i]);
-        }
-      }
-    }
-    else {
-      for (i = 0; i < api.endpoints.length; i++) {
-        if(api.endpoints[i].url === this.arguments[1]) {
+        if(api.endpoints[i].method === this.methods[methodIndex] && api.endpoints[i].url === this.arguments[1]) {
           this.displayDetailsEndpoint(api.endpoints[i]);
           return;
         }
