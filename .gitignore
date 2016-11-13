@@ -36,3 +36,5 @@ rate_limits/*
 _bot/*
 _bot.zip
 bots.json
+
+test.js
