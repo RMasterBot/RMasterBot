@@ -27,6 +27,9 @@ function Bot(name, folder, allConfigurations){
 
   this.defaultRemainingRequest = 100;
   this.defaultRemainingTime = 60*60;
+  this.verifyRemainingRequestsBeforeCall = true;
+  this.verifyAccessTokenScopesBeforeCall = true;
+  this.scopeSeparator = ',';
 
   this.convertLastAccessInMilliseconds = true;
   this.standalone = this.isStandalone();
@@ -524,6 +527,20 @@ Bot.prototype.saveNewAccessToken = function(accessTokenData) {
   }
 
   require('fs').writeFileSync(this.accessTokensFolder + this.currentConfiguration.name + '.json', JSON.stringify(file));
+};
+
+Bot.prototype.isCurrentAccessTokenCompatibleWithScope = function(scope) {
+  if(this.verifyAccessTokenScopesBeforeCall === false) {
+    return true;
+  }
+
+  var userScopes = this.accessToken.scopes;
+
+  if(typeof userScopes === 'string') {
+    userScopes = this.accessToken.scopes.split(this.scopeSeparator);
+  }
+
+  return userScopes.indexOf(scope) !== -1;
 };
 
 module.exports = Bot;
