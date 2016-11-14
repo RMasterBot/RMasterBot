@@ -1,6 +1,6 @@
 {
   "name": "rmasterbot",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "RMasterBot",
   "main": "rmasterbot.js",
   "directories": {
