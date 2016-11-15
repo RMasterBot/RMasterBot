@@ -1,21 +1,22 @@
 #!/usr/bin/env node
+var newArgs = process.argv.slice(1);
+process.argv = newArgs;
 
 if(process.argv[1] === "ats"){
   require('../ats.js');
 }
-
-if(process.argv[1] === "doc"){
+else if(process.argv[1] === "doc"){
   require('../doc.js');
 }
-
-if(process.argv[1] === "install"){
+else if(process.argv[1] === "install"){
   require('../install.js');
 }
-
-if(process.argv[1] === "job"){
+else if(process.argv[1] === "job"){
   require('../job.js');
 }
-
-if(process.argv[1] === "pid"){
+else if(process.argv[1] === "pid"){
   require('../pid.js');
+}
+else {
+  console.log('Provide command: ats , doc , install , job , pid');
 }
