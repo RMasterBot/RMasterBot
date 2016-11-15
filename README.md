@@ -7,6 +7,10 @@ It'a NodeJs project, usable on all platforms.
 
 ![npm install rmasterbot](https://nodei.co/npm/rmasterbot.png "npm install rmasterbot")
 
+## Windows User
+You have to use Windows command prompt or Powershell.  
+Bash for Git doesn't work.  
+
 ## Installation
 ### NPM
 ```
