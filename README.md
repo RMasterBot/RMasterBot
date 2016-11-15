@@ -36,6 +36,9 @@ node install Pinterest
 It will download files.  
 You will be prompt to configure your bot with an application.
 
+### Global
+If you install package in global you can call services with ```rmbot```  
+
 *If you want to develop your custom bot you can see the developer section*
 
 ## Developer
