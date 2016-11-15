@@ -1,6 +1,6 @@
 {
   "name": "rmasterbot",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "RMasterBot",
   "main": "rmasterbot.js",
   "directories": {
@@ -32,7 +32,7 @@
     "yauzl": "^2.6.0"
   },
   "bin": {
-    "rmbot": "bin/rmbot.js"
+    "rmbot": "./bin/rmbot.js"
   },
   "keywords": [
     "bot"
