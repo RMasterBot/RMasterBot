@@ -1,6 +1,6 @@
 {
   "name": "rmasterbot",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "RMasterBot",
   "main": "rmasterbot.js",
   "directories": {
@@ -30,5 +30,11 @@
     "cross-spawn": "^5.0.1",
     "npmlog": "^4.0.0",
     "yauzl": "^2.6.0"
-  }
+  },
+  "bin": {
+    "rmasterbot": "bin/rmbot.js"
+  },
+  "keywords": [
+    "bot"
+  ]
 }
