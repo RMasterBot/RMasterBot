@@ -2,7 +2,7 @@ function Ats() {
   this.bot = null;
   this.configurationName = null;
   this.port = 9000;
-  this.scopes = '';
+  this.scopes = null;
 
   this.extractArguments();
 
@@ -41,11 +41,11 @@ Ats.prototype.extractArguments = function(){
   }
 
   if(process.argv[4]) {
-    this.port = process.argv[4];
+    this.port = process.argv[4].trim();
   }
 
   if(process.argv[5]) {
-    this.scopes = process.argv[5];
+    this.scopes = process.argv[5].trim();
   }
 
   if(this.bot === null) {
@@ -65,6 +65,9 @@ Ats.prototype.stopProcess = function(exception) {
 Ats.prototype.configureBot = function() {
   var rmasterbot = require('./rmasterbot.js');
   this.bot = rmasterbot.getBot(this.bot, this.configurationName);
+  if(this.scopes === null && this.bot.getCurrentConfiguration().scopes !== undefined) {
+    this.scopes = this.bot.getCurrentConfiguration().scopes;
+  }
 };
 
 Ats.prototype.launchServer = function() {
