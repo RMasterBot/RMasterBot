@@ -23,7 +23,7 @@ function Request(){
  * @throws {RError} REQ-001 method not a string
  * @throws {RError} REQ-002 method empty
  * @throws {RError} REQ-003 method invalid
- * @returns {string} A validate Methods belong to validHttpMethods
+ * @return {string} A validate Methods belong to validHttpMethods
  */
 Request.prototype.extractParameterMethodForRequest = function (parameters) {
   var idx;
@@ -56,7 +56,7 @@ Request.prototype.extractParameterMethodForRequest = function (parameters) {
  * @throws {RError} REQ-004 parameters empty
  * @throws {RError} REQ-005 path not a string
  * @throws {RError} REQ-006 pathPrefix not a string
- * @returns {string} Concat prefix and path
+ * @return {string} Concat prefix and path
  */
 Request.prototype.extractParameterPathForRequest = function (parameters) {
   var path = this.defaultValues.path;
@@ -89,7 +89,7 @@ Request.prototype.extractParameterPathForRequest = function (parameters) {
  * @throws {RError} REQ-007 parameters empty
  * @throws {RError} REQ-008 hostname not a string
  * @throws {RError} REQ-009 hostname empty
- * @returns {string} Hostname
+ * @return {string} Hostname
  */
 Request.prototype.extractParameterHostnameForRequest = function (parameters) {
   if(parameters === undefined || parameters === null) {
@@ -119,7 +119,7 @@ Request.prototype.extractParameterHostnameForRequest = function (parameters) {
  * @throws {RError} REQ-010 parameters empty
  * @throws {RError} REQ-011 port not a number
  * @throws {RError} REQ-012 port invalid
- * @returns {int} Port
+ * @return {int} Port
  */
 Request.prototype.extractParameterPortForRequest = function (parameters) {
   if(parameters === undefined || parameters === null) {
@@ -146,7 +146,7 @@ Request.prototype.extractParameterPortForRequest = function (parameters) {
  * @param {object} parameters
  * @throws {RError} REQ-013 parameters empty
  * @throws {RError} REQ-014 headers invalid
- * @returns {object} Literal object Headers
+ * @return {object} Literal object Headers
  */
 Request.prototype.extractParameterHeadersForRequest = function (parameters) {
   if(parameters === undefined || parameters === null) {
@@ -169,7 +169,7 @@ Request.prototype.extractParameterHeadersForRequest = function (parameters) {
  * @param {object} parameters
  * @throws {RError} REQ-015 parameters empty
  * @throws {RError} REQ-014 get invalid
- * @returns {object} Literal object Get
+ * @return {object} Literal object Get
  */
 Request.prototype.extractParameterGetForRequest = function (parameters) {
   if(parameters === undefined || parameters === null) {
@@ -192,7 +192,7 @@ Request.prototype.extractParameterGetForRequest = function (parameters) {
  * @param {object} parameters
  * @throws {RError} REQ-017 parameters empty
  * @throws {RError} REQ-018 post invalid
- * @returns {object} Literal object Post
+ * @return {object} Literal object Post
  */
 Request.prototype.checkParameterPostForRequest = function (parameters) {
   if(parameters === undefined || parameters === null) {
@@ -217,7 +217,7 @@ Request.prototype.checkParameterPostForRequest = function (parameters) {
  * @throws {RError} REQ-020 files invalid
  * @throws {RError} REQ-021 file not found
  * @throws {RError} REQ-022 file error
- * @returns {object} Literal object Files
+ * @return {object} Literal object Files
  */
 Request.prototype.extractParameterFilesForRequest = function (parameters) {
   var files = [];
@@ -266,7 +266,7 @@ Request.prototype.extractParameterFilesForRequest = function (parameters) {
  * @param {object} parameters
  * @throws {RError} REQ-023 parameters empty
  * @throws {RError} REQ-024 auth (basic) invalid
- * @returns {string} Auth
+ * @return {string} Auth
  */
 Request.prototype.extractParameterAuthForRequest = function (parameters) {
   if(parameters === undefined || parameters === null) {
@@ -289,7 +289,7 @@ Request.prototype.extractParameterAuthForRequest = function (parameters) {
  * @param {object} parameters
  * @throws {RError} REQ-025 parameters empty
  * @throws {RError} REQ-026 httpModule invalid
- * @returns {string} HttpModule
+ * @return {string} HttpModule
  */
 Request.prototype.extractParameterHttpModuleForRequest = function (parameters) {
   if(parameters === undefined || parameters === null) {
@@ -310,7 +310,7 @@ Request.prototype.extractParameterHttpModuleForRequest = function (parameters) {
 /**
  * Format parameters for Request
  * @param {object} parameters
- * @returns {{method: string, path: string, hostname: string, port: int, headers: {}, get: {}, post: {}, files: {}, auth: string, httpModule: string}} Parameters
+ * @return {{method: string, path: string, hostname: string, port: int, headers: {}, get: {}, post: {}, files: {}, auth: string, httpModule: string}} Parameters
  */
 Request.prototype.formatParametersForRequest = function (parameters) {
   return {
@@ -330,7 +330,7 @@ Request.prototype.formatParametersForRequest = function (parameters) {
 /**
  * Transform get object to query string
  * @param {object} values
- * @returns {string}
+ * @return {string}
  */
 Request.prototype.transformParameterGet = function(values) {
   var queries = [];
@@ -482,7 +482,7 @@ Request.prototype.request = function(parameters, callback) {
 
 /**
  * Create a RError object for Exception
- * @returns {RError}
+ * @return {RError}
  */
 Request.prototype.RError = function() {
   var _RError = require(__dirname + '/rerror.js');
