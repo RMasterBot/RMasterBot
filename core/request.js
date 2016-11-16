@@ -1,3 +1,7 @@
+/**
+ * Make a HTTP Request
+ * @constructor
+ */
 function Request(){
   this.validHttpMethods = ["CHECKOUT", "CONNECT", "COPY", "DELETE", "GET", "HEAD", "LINK", "LOCK", "M-SEARCH", "MERGE",
     "MKACTIVITY", "MKCALENDAR", "MKCOL", "MOVE", "NOTIFY", "OPTIONS", "PATCH", "POST", "PROPFIND", "PROPPATCH", "PURGE",
@@ -12,8 +16,21 @@ function Request(){
   };
 }
 
-Request.prototype.checkParameterMethodForRequestApi = function (parameters) {
+/**
+ * Extract "method" from parameters
+ * @param {object} parameters
+ * @throws {RError} REQ-000 parameters empty
+ * @throws {RError} REQ-001 method not a string
+ * @throws {RError} REQ-002 method empty
+ * @throws {RError} REQ-003 method invalid
+ * @returns {string} A validate Methods belong to validHttpMethods
+ */
+Request.prototype.extractParameterMethodForRequest = function (parameters) {
   var idx;
+
+  if(parameters === undefined || parameters === null) {
+    throw this.RError("REQ-000", "parameters empty");
+  }
 
   if(typeof parameters.method !== "string") {
     throw this.RError("REQ-001", "method not a string");
@@ -33,20 +50,32 @@ Request.prototype.checkParameterMethodForRequestApi = function (parameters) {
   return this.validHttpMethods[idx];
 };
 
-Request.prototype.checkParameterPathForRequestApi = function (parameters) {
+/**
+ * Extract "prefix" and "path" from parameters
+ * @param {object} parameters
+ * @throws {RError} REQ-004 parameters empty
+ * @throws {RError} REQ-005 path not a string
+ * @throws {RError} REQ-006 pathPrefix not a string
+ * @returns {string} Concat prefix and path
+ */
+Request.prototype.extractParameterPathForRequest = function (parameters) {
   var path = this.defaultValues.path;
   var prefix = this.defaultValues.pathPrefix;
 
+  if(parameters === undefined || parameters === null) {
+    throw this.RError("REQ-004", "parameters empty");
+  }
+
   if(parameters.path !== undefined) {
     if(typeof parameters.path !== "string") {
-      throw this.RError("REQ-004", "path not a string");
+      throw this.RError("REQ-005", "path not a string");
     }
     path = parameters.path.trim();
   }
 
   if(parameters.pathPrefix !== undefined) {
     if(typeof parameters.pathPrefix !== "string") {
-      throw this.RError("REQ-005", "pathPrefix not a string");
+      throw this.RError("REQ-006", "pathPrefix not a string");
     }
     prefix = parameters.pathPrefix.trim();
   }
@@ -54,87 +83,157 @@ Request.prototype.checkParameterPathForRequestApi = function (parameters) {
   return prefix + path;
 };
 
-Request.prototype.checkParameterHostnameForRequestApi = function (parameters) {
+/**
+ * Extract "hostname" from parameters
+ * @param {object} parameters
+ * @throws {RError} REQ-007 parameters empty
+ * @throws {RError} REQ-008 hostname not a string
+ * @throws {RError} REQ-009 hostname empty
+ * @returns {string} Hostname
+ */
+Request.prototype.extractParameterHostnameForRequest = function (parameters) {
+  if(parameters === undefined || parameters === null) {
+    throw this.RError("REQ-007", "parameters empty");
+  }
+
   if(parameters.hostname === undefined) {
     return this.defaultValues.hostname;
   }
 
   if(typeof parameters.hostname !== "string") {
-    throw this.RError("REQ-006", "hostname not a string");
+    throw this.RError("REQ-008", "hostname not a string");
   }
 
   parameters.hostname = parameters.hostname.trim();
 
   if(parameters.hostname.length < 1) {
-    throw this.RError("REQ-007", "hostname empty");
+    throw this.RError("REQ-009", "hostname empty");
   }
 
   return parameters.hostname;
 };
 
-Request.prototype.checkParameterPortForRequestApi = function (parameters) {
+/**
+ * Extract "port" from parameters
+ * @param {object} parameters
+ * @throws {RError} REQ-010 parameters empty
+ * @throws {RError} REQ-011 port not a number
+ * @throws {RError} REQ-012 port invalid
+ * @returns {int} Port
+ */
+Request.prototype.extractParameterPortForRequest = function (parameters) {
+  if(parameters === undefined || parameters === null) {
+    throw this.RError("REQ-010", "parameters empty");
+  }
+
   if(parameters.port === undefined) {
     return this.defaultValues.port;
   }
 
   if(typeof parameters.port !== "number") {
-    throw this.RError("REQ-008", "port not a number");
+    throw this.RError("REQ-011", "port not a number");
   }
 
   if(parameters.port < 0 || parameters.port > 65535) {
-    throw this.RError("REQ-009", "port %s invalid, out of range 0 to 65535", parameters.port);
+    throw this.RError("REQ-012", "port %s invalid, out of range 0 to 65535", parameters.port);
   }
 
   return parameters.port;
 };
 
-Request.prototype.checkParameterHeadersForRequestApi = function (parameters) {
+/**
+ * Extract "headers" from parameters
+ * @param {object} parameters
+ * @throws {RError} REQ-013 parameters empty
+ * @throws {RError} REQ-014 headers invalid
+ * @returns {object} Literal object Headers
+ */
+Request.prototype.extractParameterHeadersForRequest = function (parameters) {
+  if(parameters === undefined || parameters === null) {
+    throw this.RError("REQ-013", "parameters empty");
+  }
+
   if(parameters.headers === undefined) {
     return {};
   }
 
   if (!parameters.headers instanceof Array) {
-    throw this.RError("REQ-010", "headers invalid");
+    throw this.RError("REQ-014", "headers invalid");
   }
 
   return parameters.headers;
 };
 
-Request.prototype.checkParameterGetForRequestApi = function (parameters) {
+/**
+ * Extract "get" from parameters
+ * @param {object} parameters
+ * @throws {RError} REQ-015 parameters empty
+ * @throws {RError} REQ-014 get invalid
+ * @returns {object} Literal object Get
+ */
+Request.prototype.extractParameterGetForRequest = function (parameters) {
+  if(parameters === undefined || parameters === null) {
+    throw this.RError("REQ-015", "parameters empty");
+  }
+
   if(parameters.get === undefined) {
     return {};
   }
 
   if (!parameters.get instanceof Object) {
-    throw this.RError("REQ-011", "get invalid");
+    throw this.RError("REQ-016", "get invalid");
   }
 
   return parameters.get;
 };
 
-Request.prototype.checkParameterPostForRequestApi = function (parameters) {
+/**
+ * Extract "post" from parameters
+ * @param {object} parameters
+ * @throws {RError} REQ-017 parameters empty
+ * @throws {RError} REQ-018 post invalid
+ * @returns {object} Literal object Post
+ */
+Request.prototype.checkParameterPostForRequest = function (parameters) {
+  if(parameters === undefined || parameters === null) {
+    throw this.RError("REQ-017", "parameters empty");
+  }
+
   if(parameters.post === undefined) {
     return {};
   }
 
   if (!parameters.post instanceof Object) {
-    throw this.RError("REQ-012", "post invalid");
+    throw this.RError("REQ-018", "post invalid");
   }
 
   return parameters.post;
 };
 
-Request.prototype.checkParameterFilesForRequestApi = function (parameters) {
+/**
+ * Extract "files" from parameters
+ * @param {object} parameters
+ * @throws {RError} REQ-019 parameters empty
+ * @throws {RError} REQ-020 files invalid
+ * @throws {RError} REQ-021 file not found
+ * @throws {RError} REQ-022 file error
+ * @returns {object} Literal object Files
+ */
+Request.prototype.extractParameterFilesForRequest = function (parameters) {
   var files = [];
   var key;
   var stats;
 
+  if(parameters === undefined || parameters === null) {
+    throw this.RError("REQ-019", "parameters empty");
+  }
+  
   if(parameters.files === undefined) {
     return files;
   }
 
   if (!parameters.files instanceof Object) {
-    throw this.RError("REQ-013", "files invalid");
+    throw this.RError("REQ-020", "files invalid");
   }
 
   try {
@@ -152,55 +251,87 @@ Request.prototype.checkParameterFilesForRequestApi = function (parameters) {
   }
   catch(e){
     if(key !== undefined) {
-      throw this.RError("REQ-014", "file not found: %s", parameters.files[key]);
+      throw this.RError("REQ-021", "file not found: %s", parameters.files[key]);
     }
     else {
-      throw this.RError("REQ-015", "file error");
+      throw this.RError("REQ-022", "file error");
     }
   }
 
   return files;
 };
 
-Request.prototype.checkParameterAuthForRequestApi = function (parameters) {
+/**
+ * Extract "auth" from parameters
+ * @param {object} parameters
+ * @throws {RError} REQ-023 parameters empty
+ * @throws {RError} REQ-024 auth (basic) invalid
+ * @returns {string} Auth
+ */
+Request.prototype.extractParameterAuthForRequest = function (parameters) {
+  if(parameters === undefined || parameters === null) {
+    throw this.RError("REQ-023", "parameters empty");
+  }
+
   if(parameters.auth === undefined) {
     return "";
   }
 
   if (typeof parameters.auth !== "string") {
-    throw this.RError("REQ-016", "auth (basic) invalid");
+    throw this.RError("REQ-024", "auth (basic) invalid");
   }
 
   return parameters.auth;
 };
 
-Request.prototype.checkParameterHttpModuleForRequestApi = function (parameters) {
+/**
+ * Extract "HttpModule" from parameters
+ * @param {object} parameters
+ * @throws {RError} REQ-025 parameters empty
+ * @throws {RError} REQ-026 httpModule invalid
+ * @returns {string} HttpModule
+ */
+Request.prototype.extractParameterHttpModuleForRequest = function (parameters) {
+  if(parameters === undefined || parameters === null) {
+    throw this.RError("REQ-025", "parameters empty");
+  }
+
   if(parameters.httpModule === undefined) {
     return this.defaultValues.httpModule;
   }
 
   if (parameters.httpModule !== "http" && parameters.httpModule !== "https") {
-    throw this.RError("REQ-017", "httpModule invalid: %s", parameters.httpModule);
+    throw this.RError("REQ-026", "httpModule invalid: %s", parameters.httpModule);
   }
 
   return parameters.httpModule;
 };
 
-Request.prototype.formatParametersForRequestApi = function (parameters) {
+/**
+ * Format parameters for Request
+ * @param {object} parameters
+ * @returns {{method: string, path: string, hostname: string, port: int, headers: {}, get: {}, post: {}, files: {}, auth: string, httpModule: string}} Parameters
+ */
+Request.prototype.formatParametersForRequest = function (parameters) {
   return {
-    method: this.checkParameterMethodForRequestApi(parameters),
-    path: this.checkParameterPathForRequestApi(parameters),
-    hostname: this.checkParameterHostnameForRequestApi(parameters),
-    port: this.checkParameterPortForRequestApi(parameters),
-    headers: this.checkParameterHeadersForRequestApi(parameters),
-    get: this.checkParameterGetForRequestApi(parameters),
-    post: this.checkParameterPostForRequestApi(parameters),
-    files: this.checkParameterFilesForRequestApi(parameters),
-    auth: this.checkParameterAuthForRequestApi(parameters),
-    httpModule: this.checkParameterHttpModuleForRequestApi(parameters)
+    method: this.extractParameterMethodForRequest(parameters),
+    path: this.extractParameterPathForRequest(parameters),
+    hostname: this.extractParameterHostnameForRequest(parameters),
+    port: this.extractParameterPortForRequest(parameters),
+    headers: this.extractParameterHeadersForRequest(parameters),
+    get: this.extractParameterGetForRequest(parameters),
+    post: this.checkParameterPostForRequest(parameters),
+    files: this.extractParameterFilesForRequest(parameters),
+    auth: this.extractParameterAuthForRequest(parameters),
+    httpModule: this.extractParameterHttpModuleForRequest(parameters)
   }
 };
 
+/**
+ * Transform get object to query string
+ * @param {object} values
+ * @returns {string}
+ */
 Request.prototype.transformParameterGet = function(values) {
   var queries = [];
   var key;
@@ -219,20 +350,13 @@ Request.prototype.transformParameterGet = function(values) {
   return queryString;
 };
 
-Request.prototype.transformParameterHeader = function(values) {
-  var headers = {};
-  var key;
-
-  for (key in values) {
-    if (values.hasOwnProperty(key)) {
-      headers[key] = values[key];
-    }
-  }
-
-  return headers;
-};
-
-Request.prototype.requestApi = function(parameters, callback) {
+/**
+ * Do the Request
+ * @param {object} parameters
+ * @throws {RError} REQ-027 readStreamFile error
+ * @param {function} callback
+ */
+Request.prototype.request = function(parameters, callback) {
   var that = this;
   var options;
   var readStreamFile;
@@ -247,14 +371,14 @@ Request.prototype.requestApi = function(parameters, callback) {
   var postData = '';
   var bodyToWrite = [];
 
-  parameters = this.formatParametersForRequestApi(parameters);
+  parameters = this.formatParametersForRequest(parameters);
 
   options = {
     hostname: parameters.hostname,
     port: parameters.port,
     path: parameters.path + this.transformParameterGet(parameters.get),
     method: parameters.method,
-    headers: this.transformParameterHeader(parameters.headers)
+    headers: parameters.headers
   };
 
   if(parameters.auth.length > 0) {
@@ -326,7 +450,7 @@ Request.prototype.requestApi = function(parameters, callback) {
         readStreamFile = require('fs').createReadStream(toWrite[idxToWrite].path);
 
         readStreamFile.on('error', function(error) {
-          throw that.RError("REQ-018", error.message);
+          throw that.RError("REQ-027", error.message);
         });
 
         readStreamFile.on('data', function(data) {
@@ -356,10 +480,13 @@ Request.prototype.requestApi = function(parameters, callback) {
   });
 };
 
+/**
+ * Create a RError object for Exception
+ * @returns {RError}
+ */
 Request.prototype.RError = function() {
   var _RError = require(__dirname + '/rerror.js');
-  var args = Array.prototype.slice.call(arguments);
-  args.unshift(null);
+  var args = Array.prototype.slice.call(arguments).unshift(null);
   return new (Function.prototype.bind.apply(_RError, args));
 };
 
