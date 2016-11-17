@@ -1,12 +1,20 @@
 /**
  * Make a HTTP Request
- * @constructor
+ * @class
  */
 function Request(){
+  /**
+   * List of Valid Http Methods
+   * @property {string[]}
+   */
   this.validHttpMethods = ["CHECKOUT", "CONNECT", "COPY", "DELETE", "GET", "HEAD", "LINK", "LOCK", "M-SEARCH", "MERGE",
     "MKACTIVITY", "MKCALENDAR", "MKCOL", "MOVE", "NOTIFY", "OPTIONS", "PATCH", "POST", "PROPFIND", "PROPPATCH", "PURGE",
     "PUT", "REPORT", "SEARCH", "SUBSCRIBE", "TRACE", "UNLINK", "UNLOCK", "UNSUBSCRIBE","VIEW"];
 
+  /**
+   * Default values
+   * @property {Request~DefaultValues}
+   */
   this.defaultValues = {
     hostname: "",
     httpModule: "http",
@@ -154,7 +162,7 @@ Request.prototype.extractParameterHeadersForRequest = function (parameters) {
   }
 
   if(parameters.headers === undefined) {
-    return {};
+    parameters.headers = {};
   }
 
   if (!parameters.headers instanceof Array) {
@@ -168,7 +176,7 @@ Request.prototype.extractParameterHeadersForRequest = function (parameters) {
  * Extract "get" from parameters
  * @param {object} parameters
  * @throws {RError} REQ-015 parameters empty
- * @throws {RError} REQ-014 get invalid
+ * @throws {RError} REQ-016 get invalid
  * @return {object} Literal object Get
  */
 Request.prototype.extractParameterGetForRequest = function (parameters) {
@@ -177,7 +185,7 @@ Request.prototype.extractParameterGetForRequest = function (parameters) {
   }
 
   if(parameters.get === undefined) {
-    return {};
+    parameters.get = {};
   }
 
   if (!parameters.get instanceof Object) {
@@ -200,7 +208,7 @@ Request.prototype.checkParameterPostForRequest = function (parameters) {
   }
 
   if(parameters.post === undefined) {
-    return {};
+    parameters.post = {};
   }
 
   if (!parameters.post instanceof Object) {
@@ -309,8 +317,8 @@ Request.prototype.extractParameterHttpModuleForRequest = function (parameters) {
 
 /**
  * Format parameters for Request
- * @param {object} parameters
- * @return {{method: string, path: string, hostname: string, port: int, headers: {}, get: {}, post: {}, files: {}, auth: string, httpModule: string}} Parameters
+ * @param {Request~RawParameters} parameters
+ * @return {Request~CleanParameters} Parameters
  */
 Request.prototype.formatParametersForRequest = function (parameters) {
   return {
@@ -352,9 +360,9 @@ Request.prototype.transformParameterGet = function(values) {
 
 /**
  * Do the Request
- * @param {object} parameters
+ * @param {Request~CleanParameters} parameters
  * @throws {RError} REQ-027 readStreamFile error
- * @param {function} callback
+ * @param {Request~requestCallback} callback
  */
 Request.prototype.request = function(parameters, callback) {
   var that = this;
@@ -421,12 +429,15 @@ Request.prototype.request = function(parameters, callback) {
   httpRequest = require(parameters.httpModule).request(options, function(res) {
     var data = '';
 
+    //noinspection JSUnresolvedFunction
     res.on('data', function(chunkData) {
       data+= chunkData;
     });
 
+    //noinspection JSUnresolvedFunction
     res.on('end', function() {
-      callback(false, {
+      //noinspection JSUnresolvedVariable
+      callback(null, {
         "statusCode": res.statusCode,
         "headers": res.headers,
         "data": data
@@ -486,8 +497,60 @@ Request.prototype.request = function(parameters, callback) {
  */
 Request.prototype.RError = function() {
   var _RError = require(__dirname + '/rerror.js');
-  var args = Array.prototype.slice.call(arguments).unshift(null);
+  var args = Array.prototype.slice.call(arguments);
+  args.unshift(null);
   return new (Function.prototype.bind.apply(_RError, args));
 };
 
 module.exports = Request;
+
+/**
+ * Default values
+ * @typedef {Object} Request~DefaultValues
+ * @property {string} [hostname=''] - Hostname
+ * @property {string} [httpModule=http] - Http module from nodejs
+ * @property {string} [path=/] - Path
+ * @property {string} [pathPrefix=''] - Prefix to path
+ * @property {int} [port=80] - Port
+ */
+/**
+ * Raw Parameters
+ * @typedef {Object} Request~RawParameters
+ * @property {string} method - Method
+ * @property {string} path - Path
+ * @property {string|undefined} [hostname] - Hostname
+ * @property {int|undefined} [port] - Port
+ * @property {Object|undefined} [headers] - Headers
+ * @property {Object|undefined} [get] - Get
+ * @property {Object|undefined} [post] - Post
+ * @property {Object|undefined} [files] - Files
+ * @property {string|undefined} [auth] - Auth
+ * @property {string|undefined} [httpModule] - Http module from nodejs
+ */
+/**
+ * Clean Parameters
+ * @typedef {Object} Request~CleanParameters
+ * @property {string} method - Method
+ * @property {string} path - Path
+ * @property {string} hostname - Hostname
+ * @property {int} port - Port
+ * @property {Object} headers - Headers
+ * @property {Object} get - Get
+ * @property {Object} post - Post
+ * @property {Object} files - Files
+ * @property {string} auth - Auth
+ * @property {string} httpModule - Http module from nodejs
+ */
+/**
+ * Response from request send to callback
+ * @typedef {Object} Request~Response
+ * @property {int} statusCode - Status Code from request
+ * @property {Object} headers - Headers from request
+ * @property {string} data - Data from request
+ */
+/**
+ * This callback is displayed as part of the Request class.
+ * @callback Request~requestCallback
+ * @param {Error|null} error - Error
+ * @param {Request~Response|null} response - Response
+ */
