@@ -7,361 +7,114 @@ function Request(){
    * List of Valid Http Methods
    * @property {string[]}
    */
-  this.validHttpMethods = ["CHECKOUT", "CONNECT", "COPY", "DELETE", "GET", "HEAD", "LINK", "LOCK", "M-SEARCH", "MERGE",
-    "MKACTIVITY", "MKCALENDAR", "MKCOL", "MOVE", "NOTIFY", "OPTIONS", "PATCH", "POST", "PROPFIND", "PROPPATCH", "PURGE",
-    "PUT", "REPORT", "SEARCH", "SUBSCRIBE", "TRACE", "UNLINK", "UNLOCK", "UNSUBSCRIBE","VIEW"];
+  this.validHttpMethods = ['CHECKOUT', 'CONNECT', 'COPY', 'DELETE', 'GET', 'HEAD', 'LINK', 'LOCK', 'M-SEARCH', 'MERGE',
+    'MKACTIVITY', 'MKCALENDAR', 'MKCOL', 'MOVE', 'NOTIFY', 'OPTIONS', 'PATCH', 'POST', 'PROPFIND', 'PROPPATCH', 'PURGE',
+    'PUT', 'REPORT', 'SEARCH', 'SUBSCRIBE', 'TRACE', 'UNLINK', 'UNLOCK', 'UNSUBSCRIBE','VIEW'];
 
+  /**
+   * List of Valid Http Module
+   * @property {string[]}
+   */
+  this.validHttpModules = ['http', 'https'];
+  
   /**
    * Default values
    * @property {Request~DefaultValues}
    */
   this.defaultValues = {
-    hostname: "",
-    httpModule: "http",
-    path: "/",
-    pathPrefix: "",
-    port: 80
+    hostname: '',
+    httpModule: 'http',
+    method: 'GET',
+    path: '/',
+    pathPrefix: '',
+    port: 80,
+    headers: {},
+    get: {},
+    post: {},
+    files: {},
+    auth: ''
   };
+
+  /**
+   * Activate directory parsing for files
+   * @property {boolean}
+   */
+  this.enableDirectoryForFiles = false;
 }
 
 /**
- * Extract "method" from parameters
- * @param {object} parameters
- * @throws {RError} REQ-000 parameters empty
- * @throws {RError} REQ-001 method not a string
- * @throws {RError} REQ-002 method empty
- * @throws {RError} REQ-003 method invalid
- * @return {string} A validate Methods belong to validHttpMethods
+ * Validate if parameters is setted
+ * @private
+ * @param {Object} parameters
+ * @throws {RError} REQ-001 parameters empty
  */
-Request.prototype.extractParameterMethodForRequest = function (parameters) {
-  var idx;
-
+function validateParameters(parameters) {
   if(parameters === undefined || parameters === null) {
-    throw this.RError("REQ-000", "parameters empty");
+    throw MyError('REQ-001', 'parameters undefined');
   }
-
-  if(typeof parameters.method !== "string") {
-    throw this.RError("REQ-001", "method not a string");
-  }
-
-  parameters.method = parameters.method.trim().toUpperCase();
-
-  if(parameters.method.length < 1) {
-    throw this.RError("REQ-002", "method empty");
-  }
-
-  idx = this.validHttpMethods.indexOf(parameters.method);
-  if(idx === -1) {
-    throw this.RError("REQ-003", "method %s invalid", parameters.method);
-  }
-
-  return this.validHttpMethods[idx];
-};
+}
 
 /**
- * Extract "prefix" and "path" from parameters
- * @param {object} parameters
- * @throws {RError} REQ-004 parameters empty
- * @throws {RError} REQ-005 path not a string
- * @throws {RError} REQ-006 pathPrefix not a string
- * @return {string} Concat prefix and path
+ * Validate if key is in parameters object and verify type
+ * @private
+ * @param {string} key
+ * @param {Object} parameters
+ * @param {string} type
+ * @throws {RError} REQ-002 not an Object
+ * @throws {RError} REQ-003 not same type
  */
-Request.prototype.extractParameterPathForRequest = function (parameters) {
-  var path = this.defaultValues.path;
-  var prefix = this.defaultValues.pathPrefix;
-
-  if(parameters === undefined || parameters === null) {
-    throw this.RError("REQ-004", "parameters empty");
-  }
-
-  if(parameters.path !== undefined) {
-    if(typeof parameters.path !== "string") {
-      throw this.RError("REQ-005", "path not a string");
-    }
-    path = parameters.path.trim();
-  }
-
-  if(parameters.pathPrefix !== undefined) {
-    if(typeof parameters.pathPrefix !== "string") {
-      throw this.RError("REQ-006", "pathPrefix not a string");
-    }
-    prefix = parameters.pathPrefix.trim();
-  }
-
-  return prefix + path;
-};
-
-/**
- * Extract "hostname" from parameters
- * @param {object} parameters
- * @throws {RError} REQ-007 parameters empty
- * @throws {RError} REQ-008 hostname not a string
- * @throws {RError} REQ-009 hostname empty
- * @return {string} Hostname
- */
-Request.prototype.extractParameterHostnameForRequest = function (parameters) {
-  if(parameters === undefined || parameters === null) {
-    throw this.RError("REQ-007", "parameters empty");
-  }
-
-  if(parameters.hostname === undefined) {
-    return this.defaultValues.hostname;
-  }
-
-  if(typeof parameters.hostname !== "string") {
-    throw this.RError("REQ-008", "hostname not a string");
-  }
-
-  parameters.hostname = parameters.hostname.trim();
-
-  if(parameters.hostname.length < 1) {
-    throw this.RError("REQ-009", "hostname empty");
-  }
-
-  return parameters.hostname;
-};
-
-/**
- * Extract "port" from parameters
- * @param {object} parameters
- * @throws {RError} REQ-010 parameters empty
- * @throws {RError} REQ-011 port not a number
- * @throws {RError} REQ-012 port invalid
- * @return {int} Port
- */
-Request.prototype.extractParameterPortForRequest = function (parameters) {
-  if(parameters === undefined || parameters === null) {
-    throw this.RError("REQ-010", "parameters empty");
-  }
-
-  if(parameters.port === undefined) {
-    return this.defaultValues.port;
-  }
-
-  if(typeof parameters.port !== "number") {
-    throw this.RError("REQ-011", "port not a number");
-  }
-
-  if(parameters.port < 0 || parameters.port > 65535) {
-    throw this.RError("REQ-012", "port %s invalid, out of range 0 to 65535", parameters.port);
-  }
-
-  return parameters.port;
-};
-
-/**
- * Extract "headers" from parameters
- * @param {object} parameters
- * @throws {RError} REQ-013 parameters empty
- * @throws {RError} REQ-014 headers invalid
- * @return {object} Literal object Headers
- */
-Request.prototype.extractParameterHeadersForRequest = function (parameters) {
-  if(parameters === undefined || parameters === null) {
-    throw this.RError("REQ-013", "parameters empty");
-  }
-
-  if(parameters.headers === undefined) {
-    parameters.headers = {};
-  }
-
-  if (!parameters.headers instanceof Array) {
-    throw this.RError("REQ-014", "headers invalid");
-  }
-
-  return parameters.headers;
-};
-
-/**
- * Extract "get" from parameters
- * @param {object} parameters
- * @throws {RError} REQ-015 parameters empty
- * @throws {RError} REQ-016 get invalid
- * @return {object} Literal object Get
- */
-Request.prototype.extractParameterGetForRequest = function (parameters) {
-  if(parameters === undefined || parameters === null) {
-    throw this.RError("REQ-015", "parameters empty");
-  }
-
-  if(parameters.get === undefined) {
-    parameters.get = {};
-  }
-
-  if (!parameters.get instanceof Object) {
-    throw this.RError("REQ-016", "get invalid");
-  }
-
-  return parameters.get;
-};
-
-/**
- * Extract "post" from parameters
- * @param {object} parameters
- * @throws {RError} REQ-017 parameters empty
- * @throws {RError} REQ-018 post invalid
- * @return {object} Literal object Post
- */
-Request.prototype.checkParameterPostForRequest = function (parameters) {
-  if(parameters === undefined || parameters === null) {
-    throw this.RError("REQ-017", "parameters empty");
-  }
-
-  if(parameters.post === undefined) {
-    parameters.post = {};
-  }
-
-  if (!parameters.post instanceof Object) {
-    throw this.RError("REQ-018", "post invalid");
-  }
-
-  return parameters.post;
-};
-
-/**
- * Extract "files" from parameters
- * @param {object} parameters
- * @throws {RError} REQ-019 parameters empty
- * @throws {RError} REQ-020 files invalid
- * @throws {RError} REQ-021 file not found
- * @throws {RError} REQ-022 file error
- * @return {object} Literal object Files
- */
-Request.prototype.extractParameterFilesForRequest = function (parameters) {
-  var files = [];
-  var key;
-  var stats;
-
-  if(parameters === undefined || parameters === null) {
-    throw this.RError("REQ-019", "parameters empty");
-  }
-  
-  if(parameters.files === undefined) {
-    return files;
-  }
-
-  if (!parameters.files instanceof Object) {
-    throw this.RError("REQ-020", "files invalid");
-  }
-
-  try {
-    for (key in parameters.files) {
-      if(parameters.files.hasOwnProperty(key)) {
-        stats = require('fs').lstatSync(parameters.files[key]);
-        files.push({
-          "path": parameters.files[key],
-          "parameter": key,
-          "length": stats.size,
-          "name": parameters.files[key].replace(/\\/g,'/').replace( /.*\//, '' )
-        });
+function getKeyFromParametersAndType(key, parameters, type) {
+  if(parameters[key]) {
+    if(type === 'Object') {
+      if (!(parameters[key] instanceof Object)) {
+        throw MyError("REQ-002", key + ' not an Object');
       }
     }
-  }
-  catch(e){
-    if(key !== undefined) {
-      throw this.RError("REQ-021", "file not found: %s", parameters.files[key]);
+    else if(typeof parameters[key] !== type) {
+      throw MyError('REQ-003', key + ' not a ' + type);
     }
-    else {
-      throw this.RError("REQ-022", "file error");
-    }
-  }
 
-  return files;
-};
+    return parameters[key];
+  }
+  else {
+    return null;
+  }
+}
 
 /**
- * Extract "auth" from parameters
- * @param {object} parameters
- * @throws {RError} REQ-023 parameters empty
- * @throws {RError} REQ-024 auth (basic) invalid
- * @return {string} Auth
+ * Check string is not empty
+ * @private
+ * @param string
+ * @throws {RError} REQ-004 string empty
  */
-Request.prototype.extractParameterAuthForRequest = function (parameters) {
-  if(parameters === undefined || parameters === null) {
-    throw this.RError("REQ-023", "parameters empty");
+function checkNotEmpty(string) {
+  if(string.length < 1) {
+    throw MyError('REQ-004', 'string empty');
   }
-
-  if(parameters.auth === undefined) {
-    return "";
-  }
-
-  if (typeof parameters.auth !== "string") {
-    throw this.RError("REQ-024", "auth (basic) invalid");
-  }
-
-  return parameters.auth;
-};
+}
 
 /**
- * Extract "HttpModule" from parameters
- * @param {object} parameters
- * @throws {RError} REQ-025 parameters empty
- * @throws {RError} REQ-026 httpModule invalid
- * @return {string} HttpModule
+ * Get value from array
+ * @private
+ * @param key
+ * @param array
+ * @throws {RError} REQ-005 not found
+ * @return {*}
  */
-Request.prototype.extractParameterHttpModuleForRequest = function (parameters) {
-  if(parameters === undefined || parameters === null) {
-    throw this.RError("REQ-025", "parameters empty");
+function getKeyFromArray(key, array) {
+  var idx = array.indexOf(key);
+
+  if(idx === -1) {
+    throw MyError('REQ-005', '%s not found', key);
   }
 
-  if(parameters.httpModule === undefined) {
-    return this.defaultValues.httpModule;
-  }
-
-  if (parameters.httpModule !== "http" && parameters.httpModule !== "https") {
-    throw this.RError("REQ-026", "httpModule invalid: %s", parameters.httpModule);
-  }
-
-  return parameters.httpModule;
-};
-
-/**
- * Format parameters for Request
- * @param {Request~RawParameters} parameters
- * @return {Request~CleanParameters} Parameters
- */
-Request.prototype.formatParametersForRequest = function (parameters) {
-  return {
-    method: this.extractParameterMethodForRequest(parameters),
-    path: this.extractParameterPathForRequest(parameters),
-    hostname: this.extractParameterHostnameForRequest(parameters),
-    port: this.extractParameterPortForRequest(parameters),
-    headers: this.extractParameterHeadersForRequest(parameters),
-    get: this.extractParameterGetForRequest(parameters),
-    post: this.checkParameterPostForRequest(parameters),
-    files: this.extractParameterFilesForRequest(parameters),
-    auth: this.extractParameterAuthForRequest(parameters),
-    httpModule: this.extractParameterHttpModuleForRequest(parameters)
-  }
-};
-
-/**
- * Transform get object to query string
- * @param {object} values
- * @return {string}
- */
-Request.prototype.transformParameterGet = function(values) {
-  var queries = [];
-  var key;
-
-  for (key in values) {
-    if (values.hasOwnProperty(key)) {
-      queries.push(key + '=' + encodeURIComponent(values[key]));
-    }
-  }
-
-  var queryString = queries.join('&');
-  if(queryString.length > 0) {
-    queryString = "?" + queryString;
-  }
-
-  return queryString;
-};
+  return array[idx];
+}
 
 /**
  * Do the Request
- * @param {Request~CleanParameters} parameters
- * @throws {RError} REQ-027 readStreamFile error
+ * @param {Request~RawParameters} parameters
+ * @throws {RError} REQ-006 readStreamFile error
  * @param {Request~requestCallback} callback
  */
 Request.prototype.request = function(parameters, callback) {
@@ -461,7 +214,7 @@ Request.prototype.request = function(parameters, callback) {
         readStreamFile = require('fs').createReadStream(toWrite[idxToWrite].path);
 
         readStreamFile.on('error', function(error) {
-          throw that.RError("REQ-027", error.message);
+          throw that.RError("REQ-006", error.message);
         });
 
         readStreamFile.on('data', function(data) {
@@ -492,15 +245,287 @@ Request.prototype.request = function(parameters, callback) {
 };
 
 /**
- * Create a RError object for Exception
- * @return {RError}
+ * Format parameters for Request
+ * @param {Request~RawParameters} parameters
+ * @return {Request~CleanParameters} Parameters
  */
-Request.prototype.RError = function() {
+Request.prototype.formatParametersForRequest = function (parameters) {
+  return {
+    method: this.extractParameterMethodForRequest(parameters),
+    path: this.extractParameterPathForRequest(parameters),
+    hostname: this.extractParameterHostnameForRequest(parameters),
+    port: this.extractParameterPortForRequest(parameters),
+    headers: this.extractParameterHeadersForRequest(parameters),
+    get: this.extractParameterGetForRequest(parameters),
+    post: this.extractParameterPostForRequest(parameters),
+    files: this.extractParameterFilesForRequest(parameters),
+    auth: this.extractParameterAuthForRequest(parameters),
+    httpModule: this.extractParameterHttpModuleForRequest(parameters)
+  }
+};
+
+/**
+ * Extract "method" from parameters
+ * @param {Request~RawParameters} parameters
+ * @return {string} A validate Methods belong to validHttpMethods
+ */
+Request.prototype.extractParameterMethodForRequest = function (parameters) {
+  var method;
+
+  validateParameters(parameters);
+
+  method = getKeyFromParametersAndType('method', parameters, 'string') || this.defaultValues.method;
+
+  method = method.trim().toUpperCase();
+
+  checkNotEmpty(method);
+
+  return getKeyFromArray(method, this.validHttpMethods);
+};
+
+/**
+ * Extract "prefix" and "path" from parameters
+ * @param {Request~RawParameters} parameters
+ * @return {string} Concat prefix and path
+ */
+Request.prototype.extractParameterPathForRequest = function (parameters) {
+  var path;
+  var prefix;
+
+  validateParameters(parameters);
+
+  path = getKeyFromParametersAndType('path', parameters, 'string') || this.defaultValues.path;
+
+  path = path.trim();
+
+  prefix = getKeyFromParametersAndType('pathPrefix', parameters, 'string') || this.defaultValues.pathPrefix;
+
+  prefix = prefix.trim();
+
+  return prefix + path;
+};
+
+/**
+ * Extract "hostname" from parameters
+ * @param {Request~RawParameters} parameters
+ * @return {string} Hostname
+ */
+Request.prototype.extractParameterHostnameForRequest = function (parameters) {
+  var hostname;
+
+  validateParameters(parameters);
+
+  hostname = getKeyFromParametersAndType('hostname', parameters, 'string') || this.defaultValues.hostname;
+
+  hostname = hostname.trim();
+
+  checkNotEmpty(hostname);
+
+  return hostname;
+};
+
+/**
+ * Extract "port" from parameters
+ * @param {Request~RawParameters} parameters
+ * @throws {RError} REQ-012 port invalid
+ * @return {int} Port
+ */
+Request.prototype.extractParameterPortForRequest = function (parameters) {
+  var port;
+
+  validateParameters(parameters);
+
+  port = getKeyFromParametersAndType('port', parameters, 'number') || this.defaultValues.port;
+
+  if(port < 0 || port > 65535) {
+    throw MyError("REQ-007", "port %s invalid, out of range 0 to 65535", port);
+  }
+
+  return port;
+};
+
+/**
+ * Extract "headers" from parameters
+ * @param {Request~RawParameters} parameters
+ * @return {object} Literal object Headers
+ */
+Request.prototype.extractParameterHeadersForRequest = function (parameters) {
+  validateParameters(parameters);
+
+  return getKeyFromParametersAndType('headers', parameters, 'Object') || this.defaultValues.headers;
+};
+
+/**
+ * Extract "get" from parameters
+ * @param {Request~RawParameters} parameters
+ * @return {object} Literal object Get
+ */
+Request.prototype.extractParameterGetForRequest = function (parameters) {
+  validateParameters(parameters);
+
+  return getKeyFromParametersAndType('get', parameters, 'Object') || this.defaultValues.get;
+};
+
+/**
+ * Extract "post" from parameters
+ * @param {Request~RawParameters} parameters
+ * @return {object} Literal object Post
+ */
+Request.prototype.extractParameterPostForRequest = function (parameters) {
+  validateParameters(parameters);
+
+  return getKeyFromParametersAndType('post', parameters, 'Object') || this.defaultValues.post;
+};
+
+/**
+ * Extract "files" from parameters
+ * @param {Request~RawParameters} parameters
+ * @throws {RError} REQ-008 file not found
+ * @throws {RError} REQ-009 file error
+ * @return {object} Literal object Files
+ */
+Request.prototype.extractParameterFilesForRequest = function (parameters) {
+  var tmpFiles;
+  var files = [];
+  var key;
+  var stats;
+  var statsFileInDirectory;
+  var filesInDirectory = [];
+  var idxFilesInDirectory = 0;
+  var maxFilesInDirectory;
+  var _tmpPath;
+
+  validateParameters(parameters);
+
+  tmpFiles = getKeyFromParametersAndType('files', parameters, 'Object') || this.defaultValues.files;
+
+  try {
+    for (key in tmpFiles) {
+      if(tmpFiles.hasOwnProperty(key)) {
+        stats = require('fs').lstatSync(tmpFiles[key]);
+
+        if(stats.isFile()) {
+          files.push({
+            "path": tmpFiles[key],
+            "parameter": key,
+            "length": stats.size,
+            "name": tmpFiles[key].replace(/\\/g,'/').replace( /.*\//, '' )
+          });
+        }
+        else if(stats.isDirectory()) {
+          if(this.enableDirectoryForFiles === true) {
+            filesInDirectory = require('fs').readdirSync(tmpFiles[key]);
+            maxFilesInDirectory = filesInDirectory.length;
+            for(; idxFilesInDirectory < maxFilesInDirectory; idxFilesInDirectory++) {
+              _tmpPath = tmpFiles[key] + '/' + filesInDirectory[idxFilesInDirectory];
+              statsFileInDirectory = require('fs').lstatSync(_tmpPath);
+  
+              files.push({
+                "path": _tmpPath,
+                "parameter": this.handleParameterNameForFilesFromDirectory(key, filesInDirectory[idxFilesInDirectory], idxFilesInDirectory),
+                "length": statsFileInDirectory.size,
+                "name": filesInDirectory[idxFilesInDirectory].replace(/\\/g,'/').replace( /.*\//, '' )
+              });
+            }
+          }
+          else {
+            throw MyError("REQ-008", "directory given but not enable: %s", tmpFiles[key]);
+          }
+        }
+        else {
+          throw MyError("REQ-009", "not a file and not a directory: %s", tmpFiles[key]);
+        }
+      }
+    }
+  }
+  catch(e){
+    if(e.code === 'ENOENT') {
+      throw MyError("REQ-010", "file not found: %s", tmpFiles[key]);
+    }
+    else if(e.code === 'REQ-008' || e.code === 'REQ-009') {
+      throw e;
+    }
+    else {
+      throw MyError("REQ-011", "file error: " + e.toString());
+    }
+  }
+
+  return files;
+};
+
+/**
+ * Handle the parameter name when using files from directory
+ * @param name parameter name
+ * @param files files in directory
+ * @param idx index in files
+ * @return {string} final parameter name
+ */
+Request.prototype.handleParameterNameForFilesFromDirectory = function (name, files, idx) {
+  return name + '_' + idx;
+};
+
+/**
+ * Extract "auth" from parameters
+ * @param {Request~RawParameters} parameters
+ * @return {string} Auth
+ */
+Request.prototype.extractParameterAuthForRequest = function (parameters) {
+  validateParameters(parameters);
+
+  return getKeyFromParametersAndType('auth', parameters, 'string') || this.defaultValues.auth;
+};
+
+/**
+ * Extract "HttpModule" from parameters
+ * @param {Request~RawParameters} parameters
+ * @throws {RError} REQ-026 httpModule invalid
+ * @return {string} HttpModule
+ */
+Request.prototype.extractParameterHttpModuleForRequest = function (parameters) {
+  var httpModule;
+
+  validateParameters(parameters);
+
+  httpModule = getKeyFromParametersAndType('httpModule', parameters, 'string') || this.defaultValues.httpModule;
+
+  return getKeyFromArray(httpModule, this.validHttpModules);
+};
+
+/**
+ * Transform get object to query string
+ * @param {object} values
+ * @return {string}
+ */
+Request.prototype.transformParameterGet = function(values) {
+  var queries = [];
+  var key;
+  var queryString;
+
+  for (key in values) {
+    if (values.hasOwnProperty(key)) {
+      queries.push(key + '=' + encodeURIComponent(values[key]));
+    }
+  }
+
+  queryString = queries.join('&');
+  if(queryString.length > 0) {
+    queryString = "?" + queryString;
+  }
+
+  return queryString;
+};
+
+/**
+ * A simple function for throwing Exception
+ * @return {RError}
+ * @constructor
+ */
+function MyError(){
   var _RError = require(__dirname + '/rerror.js');
   var args = Array.prototype.slice.call(arguments);
   args.unshift(null);
   return new (Function.prototype.bind.apply(_RError, args));
-};
+}
 
 module.exports = Request;
 
@@ -509,15 +534,22 @@ module.exports = Request;
  * @typedef {Object} Request~DefaultValues
  * @property {string} [hostname=''] - Hostname
  * @property {string} [httpModule=http] - Http module from nodejs
+ * @property {string} [method=GET] - Method
  * @property {string} [path=/] - Path
  * @property {string} [pathPrefix=''] - Prefix to path
  * @property {int} [port=80] - Port
+ * @property {Object} [headers={}] - Headers
+ * @property {Object} [get={}] - Get
+ * @property {Object} [post={}] - Post
+ * @property {Object} [files={}] - Files
+ * @property {string} [auth=''] - Authentification
  */
 /**
  * Raw Parameters
  * @typedef {Object} Request~RawParameters
  * @property {string} method - Method
  * @property {string} path - Path
+ * @property {string|undefined} [pathPrefix] - Path Prefix
  * @property {string|undefined} [hostname] - Hostname
  * @property {int|undefined} [port] - Port
  * @property {Object|undefined} [headers] - Headers

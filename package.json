@@ -7,8 +7,9 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "node install.js"
+    "test": "mocha --recursive",
+    "postinstall": "node install.js",
+    "cover": "istanbul cover node_modules/mocha/bin/_mocha -- -R spec --recursive"
   },
   "repository": {
     "type": "git",
@@ -27,9 +28,13 @@
     "yauzl": "^2.6.0"
   },
   "devDependencies": {
+    "chai": "^3.5.0",
     "colors": "^1.1.2",
     "cross-spawn": "^5.0.1",
+    "istanbul": "^0.4.5",
+    "mocha": "^3.1.2",
     "npmlog": "^4.0.0",
+    "sinon": "^1.17.6",
     "yauzl": "^2.6.0"
   },
   "bin": {
