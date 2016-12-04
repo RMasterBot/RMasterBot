@@ -647,6 +647,7 @@ Install.prototype.copyTempBotToFinalDestination = function() {
     this.addBotToSavedBotsFile();
   }
   else {
+    this.copyInstallJson();
     if(this.choiceConflictBot === 'erase') {
       this.resolveConflictConfiguration();
     }
@@ -693,6 +694,11 @@ Install.prototype.copyFilesRecursive = function(srcPath, destPath, depth) {
       }
     });
   }
+};
+
+Install.prototype.copyInstallJson = function() {
+  var fileContent = this.fs.readFileSync(this.installFileFromNewBot, 'utf8');
+  this.fs.writeFileSync(this.rootFolder + '/installs/' + this.botToInstallJson.bot_name + '.json' , fileContent);
 };
 
 Install.prototype.launchPackageJson = function() {

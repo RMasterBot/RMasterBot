@@ -143,7 +143,7 @@ Bot.prototype.setAccessToken = function(accessToken) {
   this.accessToken = accessToken;
 };
 
-Bot.prototype.getAccessTokenUrl = function() {
+Bot.prototype.getAccessTokenUrl = function(scopes) {
   throw this.RError('BOT-006', "Implement getAccessTokenUrl");
 };
 
