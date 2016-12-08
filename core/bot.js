@@ -611,7 +611,7 @@ Bot.prototype.doRequest = function(parameters, callback) {
     }
 
     if(this.isCurrentAccessTokenCompatibleWithScope(parameters.scope) === false) {
-      callback('Access Token Scope is incompatible', null);
+      callback(`Access Token Scope required is ${parameters.scope} , it is incompatible with your user scope ${this.accessToken.scopes}`, null);
       return;
     }
   }
