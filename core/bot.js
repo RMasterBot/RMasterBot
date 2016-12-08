@@ -1,7 +1,24 @@
 var Request = require(__dirname + '/request.js');
 
+/**
+ * Abstract Bot
+ * @class Bot
+ * @augments Request
+ * @param {string} name
+ * @param {string} folder
+ * @param {Object} allConfigurations
+ * @constructor
+ */
 function Bot(name, folder, allConfigurations){
+  /**
+   * Name of the bot
+   * @property {string}
+   */
   this.name = name || '';
+  /**
+   * Folder of the bot
+   * @property {string}
+   */
   this.folder = folder || '';
 
   this.allConfigurations = allConfigurations || [];
@@ -143,6 +160,11 @@ Bot.prototype.setAccessToken = function(accessToken) {
   this.accessToken = accessToken;
 };
 
+/**
+ * Get url for Access Token when you have to authorize an application
+ * @param {string} scopes
+ * @return {string} url
+ */
 Bot.prototype.getAccessTokenUrl = function(scopes) {
   throw this.RError('BOT-006', "Implement getAccessTokenUrl");
 };
@@ -151,6 +173,11 @@ Bot.prototype.extractResponseDataForAccessToken = function(req) {
   throw this.RError('BOT-007', "Implement extractResponseDataForAccessToken");
 };
 
+/**
+ * Request Access Token after getting code
+ * @param {string} responseData
+ * @param {Bot~requestAccessTokenCallback} callback
+ */
 Bot.prototype.requestAccessToken = function(responseData, callback) {
   throw this.RError('BOT-008', "Implement requestAccessToken");
 };
@@ -243,6 +270,11 @@ Bot.prototype.getDefaultRemainingTime = function(url){
   return this.defaultRemainingTime;
 };
 
+/**
+ * Get remaining requests from result
+ * @param {Request~Response} resultFromRequest
+ * @return {Number}
+ */
 Bot.prototype.getRemainingRequestsFromResult = function(resultFromRequest) {
   throw this.RError('BOT-009', "Implement getRemainingRequestsFromResult");
 };
@@ -493,14 +525,29 @@ Bot.prototype.formatNewAccessToken = function(accessTokenData, scopes, callback)
   });
 };
 
+/**
+ * getAccessTokenFromAccessTokenData
+ * @param {*} accessTokenData
+ * @return {*}
+ */
 Bot.prototype.getAccessTokenFromAccessTokenData = function(accessTokenData) {
   throw this.RError('BOT-010', "Implement getAccessTokenFromAccessTokenData");
 };
 
+/**
+ * getTypeAccessTokenFromAccessTokenData
+ * @param {*} accessTokenData
+ * @return {*}
+ */
 Bot.prototype.getTypeAccessTokenFromAccessTokenData = function(accessTokenData) {
   throw this.RError('BOT-011', "Implement getTypeAccessTokenFromAccessTokenData");
 };
 
+/**
+ * getUserForNewAccessToken
+ * @param {*} formatAccessToken
+ * @param {Bot~getUserForNewAccessTokenCallback} callback
+ */
 Bot.prototype.getUserForNewAccessToken = function(formatAccessToken, callback) {
   throw this.RError('BOT-012', "Implement getUserForNewAccessToken");
 };
@@ -543,6 +590,11 @@ Bot.prototype.isCurrentAccessTokenCompatibleWithScope = function(scope) {
   return userScopes.indexOf(scope) !== -1;
 };
 
+/**
+ * 
+ * @param {Bot~doRequestParameters} parameters
+ * @param {Bot~requestCallback} callback
+ */
 Bot.prototype.doRequest = function(parameters, callback) {
   var that = this;
   var key;
@@ -552,7 +604,7 @@ Bot.prototype.doRequest = function(parameters, callback) {
     parameters.options = {};
   }
 
-  if(parameters.useAccessToken) {
+  if(parameters.useAccessToken && parameters.useAccessToken === true) {
     if (!this.isAccessTokenSetted()) {
       callback('Access Token required', null);
       return;
@@ -625,3 +677,32 @@ Bot.prototype.extractPaginationFromRequest = function(data) {
 };
 
 module.exports = Bot;
+
+/**
+ * requestAccessTokenCallback
+ * @callback Bot~requestAccessTokenCallback
+ * @param {Error|string|null} error - Error
+ * @param {?*} data - Data
+ */
+/**
+ * getUserForNewAccessTokenCallback
+ * @callback Bot~getUserForNewAccessTokenCallback
+ * @param {Error|string|null} error - Error
+ * @param {?*} data - Data
+ */
+/**
+ * Default values for request parameters
+ * @typedef {Request~RawParameters} Bot~doRequestParameters
+ * @property {boolean|undefined} [useAccessToken] - Use Access Token
+ * @property {string|undefined} [scope] - Scope
+ * @property {boolean|undefined} [returnCursor] - Return cursor for pagination
+ * @property {Object|undefined} [output] - Output for models
+ * @property {Object|undefined} [options] - Options
+ */
+/**
+ * Request callback
+ * @callback Bot~requestCallback
+ * @param {Error|string|null} error - Error
+ * @param {*} data - Data
+ * @param {*|undefined} [cursor] - Cursor or pagination
+ */

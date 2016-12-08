@@ -1,6 +1,6 @@
 /**
  * Make a HTTP Request
- * @class
+ * @class Request
  */
 function Request(){
   /**
@@ -191,24 +191,24 @@ Request.prototype.request = function(parameters, callback) {
     res.on('end', function() {
       //noinspection JSUnresolvedVariable
       callback(null, {
-        "statusCode": res.statusCode,
-        "headers": res.headers,
-        "data": data
+        'statusCode': res.statusCode,
+        'headers': res.headers,
+        'data': data
       });
     });
   });
 
   if (parameters.files.length > 0) {
-    function writeAsyncBody(req, toWrite, idxToWrite) {
+    function writeAsyncBody(httpRequest, toWrite, idxToWrite) {
       if(toWrite.length == idxToWrite) {
-        req.end();
+        httpRequest.end();
         return;
       }
 
       if (typeof(toWrite[idxToWrite]) == 'string') {
-        req.write(toWrite[idxToWrite]);
+        httpRequest.write(toWrite[idxToWrite]);
         idxToWrite++;
-        writeAsyncBody(req, toWrite, idxToWrite);
+        writeAsyncBody(httpRequest, toWrite, idxToWrite);
       }
       else {
         readStreamFile = require('fs').createReadStream(toWrite[idxToWrite].path);
@@ -218,13 +218,13 @@ Request.prototype.request = function(parameters, callback) {
         });
 
         readStreamFile.on('data', function(data) {
-          req.write(data);
+          httpRequest.write(data);
         });
 
         readStreamFile.on('end', function() {
-          req.write(endl);
+          httpRequest.write(endl);
           idxToWrite++;
-          writeAsyncBody(req, toWrite, idxToWrite);
+          writeAsyncBody(httpRequest, toWrite, idxToWrite);
         });
       }
     }
@@ -478,7 +478,6 @@ Request.prototype.extractParameterAuthForRequest = function (parameters) {
 /**
  * Extract "HttpModule" from parameters
  * @param {Request~RawParameters} parameters
- * @throws {RError} REQ-026 httpModule invalid
  * @return {string} HttpModule
  */
 Request.prototype.extractParameterHttpModuleForRequest = function (parameters) {
@@ -576,7 +575,7 @@ module.exports = Request;
 /**
  * Response from request send to callback
  * @typedef {Object} Request~Response
- * @property {int} statusCode - Status Code from request
+ * @property {Number} statusCode - Status Code from request
  * @property {Object} headers - Headers from request
  * @property {string} data - Data from request
  */
