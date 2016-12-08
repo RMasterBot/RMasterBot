@@ -60,11 +60,12 @@ function validateParameters(parameters) {
  * @param {string} key
  * @param {Object} parameters
  * @param {string} type
+ * @param {*} defaultValue default value if key not in parameters
  * @throws {RError} REQ-002 not an Object
  * @throws {RError} REQ-003 not same type
  */
-function getKeyFromParametersAndType(key, parameters, type) {
-  if(parameters[key]) {
+function getKeyFromParametersAndType(key, parameters, type, defaultValue) {
+  if(parameters[key] !== undefined) {
     if(type === 'Object') {
       if (!(parameters[key] instanceof Object)) {
         throw MyError("REQ-002", key + ' not an Object');
@@ -77,7 +78,7 @@ function getKeyFromParametersAndType(key, parameters, type) {
     return parameters[key];
   }
   else {
-    return null;
+    return defaultValue;
   }
 }
 
@@ -274,7 +275,7 @@ Request.prototype.extractParameterMethodForRequest = function (parameters) {
 
   validateParameters(parameters);
 
-  method = getKeyFromParametersAndType('method', parameters, 'string') || this.defaultValues.method;
+  method = getKeyFromParametersAndType('method', parameters, 'string', this.defaultValues.method);
 
   method = method.trim().toUpperCase();
 
@@ -294,11 +295,11 @@ Request.prototype.extractParameterPathForRequest = function (parameters) {
 
   validateParameters(parameters);
 
-  path = getKeyFromParametersAndType('path', parameters, 'string') || this.defaultValues.path;
+  path = getKeyFromParametersAndType('path', parameters, 'string', this.defaultValues.path);
 
   path = path.trim();
 
-  prefix = getKeyFromParametersAndType('pathPrefix', parameters, 'string') || this.defaultValues.pathPrefix;
+  prefix = getKeyFromParametersAndType('pathPrefix', parameters, 'string', this.defaultValues.pathPrefix);
 
   prefix = prefix.trim();
 
@@ -315,7 +316,7 @@ Request.prototype.extractParameterHostnameForRequest = function (parameters) {
 
   validateParameters(parameters);
 
-  hostname = getKeyFromParametersAndType('hostname', parameters, 'string') || this.defaultValues.hostname;
+  hostname = getKeyFromParametersAndType('hostname', parameters, 'string', this.defaultValues.hostname);
 
   hostname = hostname.trim();
 
@@ -335,7 +336,7 @@ Request.prototype.extractParameterPortForRequest = function (parameters) {
 
   validateParameters(parameters);
 
-  port = getKeyFromParametersAndType('port', parameters, 'number') || this.defaultValues.port;
+  port = getKeyFromParametersAndType('port', parameters, 'number', this.defaultValues.port);
 
   if(port < 0 || port > 65535) {
     throw MyError("REQ-007", "port %s invalid, out of range 0 to 65535", port);
@@ -352,7 +353,7 @@ Request.prototype.extractParameterPortForRequest = function (parameters) {
 Request.prototype.extractParameterHeadersForRequest = function (parameters) {
   validateParameters(parameters);
 
-  return getKeyFromParametersAndType('headers', parameters, 'Object') || this.defaultValues.headers;
+  return getKeyFromParametersAndType('headers', parameters, 'Object', this.defaultValues.headers);
 };
 
 /**
@@ -363,7 +364,7 @@ Request.prototype.extractParameterHeadersForRequest = function (parameters) {
 Request.prototype.extractParameterGetForRequest = function (parameters) {
   validateParameters(parameters);
 
-  return getKeyFromParametersAndType('get', parameters, 'Object') || this.defaultValues.get;
+  return getKeyFromParametersAndType('get', parameters, 'Object', this.defaultValues.get);
 };
 
 /**
@@ -374,7 +375,7 @@ Request.prototype.extractParameterGetForRequest = function (parameters) {
 Request.prototype.extractParameterPostForRequest = function (parameters) {
   validateParameters(parameters);
 
-  return getKeyFromParametersAndType('post', parameters, 'Object') || this.defaultValues.post;
+  return getKeyFromParametersAndType('post', parameters, 'Object', this.defaultValues.post);
 };
 
 /**
@@ -397,7 +398,7 @@ Request.prototype.extractParameterFilesForRequest = function (parameters) {
 
   validateParameters(parameters);
 
-  tmpFiles = getKeyFromParametersAndType('files', parameters, 'Object') || this.defaultValues.files;
+  tmpFiles = getKeyFromParametersAndType('files', parameters, 'Object', this.defaultValues.files);
 
   try {
     for (key in tmpFiles) {
@@ -472,7 +473,7 @@ Request.prototype.handleParameterNameForFilesFromDirectory = function (name, fil
 Request.prototype.extractParameterAuthForRequest = function (parameters) {
   validateParameters(parameters);
 
-  return getKeyFromParametersAndType('auth', parameters, 'string') || this.defaultValues.auth;
+  return getKeyFromParametersAndType('auth', parameters, 'string', this.defaultValues.auth);
 };
 
 /**
@@ -485,7 +486,7 @@ Request.prototype.extractParameterHttpModuleForRequest = function (parameters) {
 
   validateParameters(parameters);
 
-  httpModule = getKeyFromParametersAndType('httpModule', parameters, 'string') || this.defaultValues.httpModule;
+  httpModule = getKeyFromParametersAndType('httpModule', parameters, 'string', this.defaultValues.httpModule);
 
   return getKeyFromArray(httpModule, this.validHttpModules);
 };
