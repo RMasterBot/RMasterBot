@@ -543,4 +543,85 @@ Bot.prototype.isCurrentAccessTokenCompatibleWithScope = function(scope) {
   return userScopes.indexOf(scope) !== -1;
 };
 
+Bot.prototype.doRequest = function(parameters, callback) {
+  var that = this;
+  var key;
+  var errorMessage = 'Something went wrong.';
+
+  if(parameters.options === undefined) {
+    parameters.options = {};
+  }
+
+  if(parameters.useAccessToken) {
+    if (!this.isAccessTokenSetted()) {
+      callback('Access Token required', null);
+      return;
+    }
+
+    if(this.isCurrentAccessTokenCompatibleWithScope(parameters.scope) === false) {
+      callback('Access Token Scope is incompatible', null);
+      return;
+    }
+  }
+
+  if(this.verifyRemainingRequestsBeforeCall && this.hasRemainingRequests() === false){
+    callback('No remaining Requests', null);
+    return;
+  }
+
+  var requestParameters = JSON.parse(JSON.stringify(parameters));
+  this.request(requestParameters, function(error, result){
+    if(error) {
+      callback(error, false);
+    }
+    else {
+      that.updateRemainingRequests(result);
+
+      var data = JSON.parse(result.data);
+      var responseData = that.extractDataFromRequest(data);
+
+      if(result.statusCode >= 400) {
+        callback(that.extractErrorMessageFromRequest(data), false);
+        return;
+      }
+
+      if(that.useModels && responseData !== null && parameters.output !== undefined && parameters.output.model !== undefined) {
+        if(parameters.output.isArray !== undefined && parameters.output.isArray === true) {
+          var max = responseData.length;
+          for(var i = 0; i < max; i++) {
+            responseData[i] = new that.models[parameters.output.model](responseData[i]);
+          }
+        }
+        else {
+          responseData = new that.models[parameters.output.model](responseData);
+        }
+      }
+
+      if(parameters.returnCursor !== undefined && parameters.returnCursor === true) {
+        callback(null, responseData, that.extractPaginationFromRequest(data));
+      }
+      else {
+        callback(null, responseData);
+      }
+    }
+  });
+
+};
+
+Bot.prototype.extractDataFromRequest = function(data) {
+  return data.data;
+};
+
+Bot.prototype.extractErrorMessageFromRequest = function(data) {
+  if(data.message !== undefined) {
+    return data.message;
+  }
+  
+  return data;
+};
+
+Bot.prototype.extractPaginationFromRequest = function(data) {
+  return data.page;
+};
+
 module.exports = Bot;
