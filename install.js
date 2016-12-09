@@ -887,7 +887,7 @@ Install.prototype.logInfo = function(string) {
 Install.prototype.stopProcess = function(exitMessage){
   this.cleanup();
   this.log.error('RMasterBot', exitMessage);
-  process.exit(-1);
+  process.exit(0);
 };
 
 Install.prototype.cleanup = function() {
