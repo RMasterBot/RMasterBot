@@ -591,7 +591,7 @@ Bot.prototype.isCurrentAccessTokenCompatibleWithScope = function(scope) {
 };
 
 /**
- * 
+ * doRequest
  * @param {Bot~doRequestParameters} parameters
  * @param {Bot~requestCallback} callback
  */

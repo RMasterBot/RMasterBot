@@ -208,3 +208,10 @@ Job.prototype.stopProcess = function(exception) {
 };
 
 new Job();
+
+/**
+ * Job Callback
+ * @callback Job~Callback
+ * @param {Error|string|null} error - Error
+ * @param {*} data - Data
+ */
