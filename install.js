@@ -95,6 +95,7 @@ Install.prototype.askBotToInstall = function() {
         rl.clearLine(process.stdin);
         rl.close();
         that.stopProcess('Stopped by user');
+        return;
       }
 
       answer = answer.trim();
@@ -137,6 +138,7 @@ Install.prototype.detectBotType = function() {
   else {
     if(!this.isInteractifMode) {
       this.stopProcess('Type Bot not detected');
+      return;
     }
     else {
       return false;
@@ -164,6 +166,7 @@ Install.prototype.downloadBot = function(options){
 
   if(this.countFollowRedirect < 0) {
     this.stopProcess('Too much redirect');
+    return;
   }
 
   this.logInfo('Retreive from ' + options.host + options.path);
@@ -178,10 +181,12 @@ Install.prototype.downloadBot = function(options){
     }
     else if(response.statusCode >= 400) {
       that.stopProcess('Bot not found or available: ' + response.statusCode);
+      return;
     }
 
     if(response.headers['content-type'] !== 'application/zip') {
       that.stopProcess('Content type is incorrect: application/zip needed, server provide ' + response.headers['content-type']);
+      return;
     }
 
     that.logInfo('Prepare to download');
@@ -200,6 +205,7 @@ Install.prototype.downloadBot = function(options){
 
   request.on('error', function(error){
     that.stopProcess('Download error: ' + error.toString());
+    return;
   });
 
   request.end();
@@ -293,6 +299,7 @@ Install.prototype.unzipBot = function(){
   require('yauzl').open(this.zipFilepath, {lazyEntries: true}, function(error, zipfile) {
     if (error){
       that.stopProcess('Failed open zip: ' + error.toString());
+      return;
     }
 
     that.logInfo('Create temp folder at: ' + that.rootFolder);
@@ -309,6 +316,7 @@ Install.prototype.unzipBot = function(){
         zipfile.openReadStream(entry, function(err, readStream) {
           if (err){
             that.stopProcess('Failed open file in zip: ' + entry.fileName);
+            return;
           }
 
           file = that.extractPathAndFileFromZip(entry.fileName);
@@ -405,6 +413,7 @@ Install.prototype.checkInstallJson = function(){
   }
   else {
     this.stopProcess('File install.json is missing in bot temp folder');
+    return;
   }
 
   countBotsInstalled = botsInstalledJson.length;
@@ -537,6 +546,7 @@ Install.prototype.resolveConflict = function(hasFolderProblem, hasNameProblem){
       }
       else if(answer == 'q') {
         that.stopProcess('Stopped by user');
+        return;
       }
       else {
         resolveBot();
@@ -634,6 +644,7 @@ Install.prototype.copyTempBotToFinalDestination = function() {
       }
       catch(e) {
         this.stopProcess(e.toString());
+        return;
       }
     }
 
@@ -666,6 +677,7 @@ Install.prototype.copyFilesRecursive = function(srcPath, destPath, depth) {
 
   if(depth > this.maxDepthCopyFolder) {
     this.stopProcess('Depth copy folder exceded');
+    return;
   }
 
   if(that.isFileExists(srcPath)) {
@@ -683,6 +695,7 @@ Install.prototype.copyFilesRecursive = function(srcPath, destPath, depth) {
           }
           catch(e) {
             that.stopProcess(e.toString());
+            return;
           }
         }
 
@@ -735,6 +748,7 @@ Install.prototype.launchSetupConfiguration = function(modificationType) {
 
   if(this.botToInstallJson.configuration.name === undefined) {
     this.stopProcess('Name missing in configuration file');
+    return;
   }
 
   if(modificationType === 'add') {
@@ -868,7 +882,6 @@ Install.prototype.endInstall = function() {
   this.launchPackageJson();
   this.cleanup();
   this.logInfo('Done');
-  process.exit(0);
 };
 
 Install.prototype.isFileExists = function(path) {
@@ -887,7 +900,6 @@ Install.prototype.logInfo = function(string) {
 Install.prototype.stopProcess = function(exitMessage){
   this.cleanup();
   this.log.error('RMasterBot', exitMessage);
-  process.exit(0);
 };
 
 Install.prototype.cleanup = function() {
