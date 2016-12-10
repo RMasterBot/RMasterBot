@@ -489,6 +489,8 @@ Bot.prototype.getPrivateJobFile = function(job) {
   else {
     return this.searchDeepFile(job, this.privateJobsFolder);
   }
+
+  return null;
 };
 
 Bot.prototype.getJobFile = function(job) {
@@ -503,6 +505,8 @@ Bot.prototype.getJobFile = function(job) {
   else {
     return this.searchDeepFile(job, this.jobsFolder);
   }
+
+  return null;
 };
 
 Bot.prototype.searchDeepFile = function (searchFile, path) {

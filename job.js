@@ -99,6 +99,7 @@ Job.prototype.showHelp = function() {
 
     var privateJobsFile = this.botConfigured.getPrivateJobFile(this.job);
     var jobsFile = this.botConfigured.getJobFile(this.job);
+    console.log(privateJobsFile);
     if(privateJobsFile !== null) {
       content = require('fs').readFileSync(privateJobsFile, 'utf-8');
     }
