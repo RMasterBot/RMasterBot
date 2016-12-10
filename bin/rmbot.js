@@ -3,12 +3,12 @@ var newArgs = process.argv.slice(1);
 process.argv = newArgs;
 
 var services = {
-  ats: '../ats.js',
-  doc: '../doc.js',
-  install: '../install.js',
-  job: '../job.js',
-  pid: '../pid.js',
-  sdk: '../sdk.js'
+  ats: require('path').join('..', 'ats.js'),
+  doc: require('path').join('..', 'doc.js'),
+  install: require('path').join('..', 'install.js'),
+  job: require('path').join('..', 'job.js'),
+  pid: require('path').join('..', 'pid.js'),
+  sdk: require('path').join('..', 'sdk.js')
 };
 
 if (services.hasOwnProperty(process.argv[1])) {

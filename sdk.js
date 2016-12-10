@@ -56,7 +56,7 @@ function Sdk() {
   this.hasToConfirmEraseBotFolderDst = false;
 
   this.rootFolder = __dirname;
-  this.botsInstalledFile = this.rootFolder + '/bots.json';
+  this.botsInstalledFile = require('path').join(this.rootFolder, 'bots.json');
   this.botsInstalledJson = null;
   this.foldersToCreate = ['access_tokens', 'applications', 'docs', 'downloads', 'jobs', 'models', 'private_jobs', 'process_ids', 'rate_limits'];
   this.maxDepthCopyFolder = 3;
@@ -275,7 +275,7 @@ Sdk.prototype.askInformationsForCreateBot = function() {
     output: process.stdout
   });
 
-  rl.clearLine(process.stdin);
+  rl.clearLine(process.stdout, 0);
 
   function next() {
     idx++;
@@ -397,7 +397,7 @@ ${this.botName}.prototype.getUserForNewAccessToken = function(formatAccessToken,
     ats = '';
   }
   
-  return `var Bot = require('../../core/bot.js');
+  return `var Bot = require(require('path').join('..','..','core','bot.js'));
 
 function ${this.botName}(name, folder, allConfigurations){
   Bot.call(this, name, folder, allConfigurations);
@@ -410,71 +410,26 @@ function ${this.botName}(name, folder, allConfigurations){
 ${this.botName}.prototype = new Bot();
 ${this.botName}.prototype.constructor = ${this.botName};
 
-${this.botName}.prototype.apiCall = function(parameters, callback) {
-  var that = this;
-  var requestParams = {
-    method: '',
-    path: '',
-    get: {},
-    post: {},
-    files: {}
-  };
-  var key;
-  var errorMessage = 'Something went wrong.';
-
-  if(!this.isAccessTokenSetted()) {
-    callback('Access Token required', null);
-    return;
-  }
-
-  this.request(requestParams, function(error, result){
-    if(error !== false) {
-      callback(error, false);
-    }
-    else {
-      that.updateRemainingRequests(result);
-
-      var data = JSON.parse(result.data);
-      var responseData = data.data;
-
-      if(result.statusCode >= 400) {
-        if(data.message !== undefined) {
-          errorMessage = data.message;
-        }
-        callback(errorMessage, false);
-        return;
-      }
-
-      if(that.useModels && data.data !== null && parameters.output !== undefined && parameters.output.model !== undefined) {
-        if(parameters.output.isArray !== undefined && parameters.output.isArray === true) {
-          var max = data.data.length;
-          for(var i = 0; i < max; i++) {
-            data.data[i] = new that.models[parameters.output.model](data.data[i]);
-          }
-        }
-        else {
-          responseData = new that.models[parameters.output.model](data.data);
-        }
-      }
-
-      if(parameters.returnCursor !== undefined && parameters.returnCursor === true) {
-        callback(null, responseData, data.page);
-      }
-      else {
-        callback(null, responseData);
-      }
-    }
-  });
-
+/**
+ * Prepare and complete parameters for request
+ * @param {Bot~doRequestParameters} parameters
+ * @param {Bot~requestCallback|*} callback
+ */
+${this.botName}.prototype.prepareRequest = function(parameters, callback) {
+  this.doRequest(parameters, callback);
 };
 
+/**
+ * API example
+ * @param {${this.botName}~requestCallback} callback
+ */
 ${this.botName}.prototype.example = function(callback) {
   var params = {
     method: 'GET'
     path: 'example',
   };
 
-  this.apiCall(params, callback);
+  this.prepareRequest(params, callback);
 };
 
 ${ats}module.exports = ${this.botName};`;
@@ -493,7 +448,7 @@ Sdk.prototype.askConfirmEraseBotNameDst = function() {
     output: process.stdout
   });
 
-  rl.clearLine(process.stdin);
+  rl.clearLine(process.stdout, 0);
 
   console.log('Bot Name destination already exist');
   function ask() {
@@ -524,7 +479,7 @@ Sdk.prototype.askConfirmEraseBotFolderDst = function() {
     output: process.stdout
   });
 
-  rl.clearLine(process.stdin);
+  rl.clearLine(process.stdout, 0);
 
   console.log('Bot Folder destination already exist');
   function ask() {

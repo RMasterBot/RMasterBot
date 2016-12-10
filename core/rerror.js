@@ -3,7 +3,7 @@ function RError(){
 
   this.code = arguments["0"] || undefined;
   this.message = arguments["1"] || undefined;
-  this.locale = require(__dirname + '/locale.js');
+  this.locale = require(require('path').join(__dirname, 'locale.js'));
   this.args = [];
 
   for(var key in arguments) {

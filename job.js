@@ -96,11 +96,14 @@ Job.prototype.showHelp = function() {
   else {
     this.loadBot();
     var content = null;
-    if(this.isFileExists(this.botConfigured.privateJobsFolder + this.job + '.js')) {
-      content = require('fs').readFileSync(this.botConfigured.privateJobsFolder + this.job + '.js', 'utf-8');
+
+    var privateJobsFile = this.botConfigured.getPrivateJobFile(this.job);
+    var jobsFile = this.botConfigured.getJobFile(this.job);
+    if(privateJobsFile !== null) {
+      content = require('fs').readFileSync(privateJobsFile, 'utf-8');
     }
-    else if(this.isFileExists(this.botConfigured.jobsFolder + this.job + '.js')) {
-      content = require('fs').readFileSync(this.botConfigured.jobsFolder + this.job + '.js', 'utf-8');
+    else if(jobsFile !== null) {
+      content = require('fs').readFileSync(jobsFile, 'utf-8');
     }
     else {
       console.log('Job not found');
@@ -143,15 +146,15 @@ Job.prototype.loadBot = function() {
 };
 
 Job.prototype.setupPid = function() {
-  var that = this;
+  var processIdFile = require('path').join(this.botConfigured.processIdsFolder, process.pid + '.pid');
 
-  require('fs').writeFileSync(this.botConfigured.processIdsFolder + process.pid + '.pid', process.argv.join(' '), 'utf-8');
+  require('fs').writeFileSync(processIdFile, process.argv.join(' '), 'utf-8');
 
   process.on('exit', function() {
     require('npmlog').info('RMasterBot', "End");
 
     try {
-      require('fs').unlinkSync(that.botConfigured.processIdsFolder + process.pid + '.pid');
+      require('fs').unlinkSync(processIdFile);
     } catch (e) {
       //
     }

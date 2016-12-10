@@ -1,4 +1,4 @@
-var Request = require(__dirname + '/request.js');
+var Request = require(require('path').join(__dirname, '/request.js'));
 
 /**
  * Abstract Bot
@@ -25,13 +25,13 @@ function Bot(name, folder, allConfigurations){
   this.currentConfiguration = {};
   this.accessToken = {};
 
-  this.accessTokensFolder = __dirname + '/../access_tokens/' + this.folder + '/';
-  this.rateLimitsFolder = __dirname + '/../rate_limits/' + this.folder + '/';
-  this.modelsFolder = __dirname + '/../models/' + this.folder + '/';
-  this.privateJobsFolder = __dirname + '/../private_jobs/' + this.folder + '/';
-  this.jobsFolder = __dirname + '/../jobs/' + this.folder + '/';
-  this.processIdsFolder = __dirname + '/../process_ids/' + this.folder + '/';
-  this.docsFolder = __dirname + '/../docs/' + this.folder + '/';
+  this.accessTokensFolder = require('path').join(__dirname, '..', 'access_tokens', this.folder);
+  this.rateLimitsFolder = require('path').join(__dirname, '..', 'rate_limits', this.folder);
+  this.modelsFolder = require('path').join(__dirname, '..', 'models', this.folder);
+  this.privateJobsFolder = require('path').join(__dirname, '..', 'private_jobs', this.folder);
+  this.jobsFolder = require('path').join(__dirname, '..', 'jobs', this.folder);
+  this.processIdsFolder = require('path').join(__dirname, '..', 'process_ids', this.folder);
+  this.docsFolder = require('path').join(__dirname, '..', 'docs', this.folder);
 
   this.models = {};
   this.useModels = true;
@@ -111,10 +111,10 @@ Bot.prototype.useConfigurationByName = function(configurationName) {
 
 Bot.prototype.getUserAccessTokenFileByUser = function(user) {
   if(this.currentConfiguration.name === undefined) {
-    throw this.RError('BOT-xxx', "Configuration is empty");
+    throw this.RError('BOT-002', "Configuration is empty");
   }
 
-  var filepath = this.accessTokensFolder + this.currentConfiguration.name + '.json';
+  var filepath = require('path').join(this.accessTokensFolder, this.currentConfiguration.name + '.json');
   var fileContent;
   var idxAccessToken = 0;
   var countAccessToken;
@@ -129,10 +129,10 @@ Bot.prototype.getUserAccessTokenFileByUser = function(user) {
       }
     }
 
-    throw this.RError('BOT-002', "Access Token File not found for user %s", user);
+    throw this.RError('BOT-003', "Access Token File not found for user %s", user);
   }
   else {
-    throw this.RError('BOT-002', "Access Token File not found for user %s", user);
+    throw this.RError('BOT-004', "Access Token File not found for user %s", user);
   }
 };
 
@@ -166,11 +166,11 @@ Bot.prototype.setAccessToken = function(accessToken) {
  * @return {string} url
  */
 Bot.prototype.getAccessTokenUrl = function(scopes) {
-  throw this.RError('BOT-006', "Implement getAccessTokenUrl");
+  throw this.RError('BOT-005', "Implement getAccessTokenUrl");
 };
 
 Bot.prototype.extractResponseDataForAccessToken = function(req) {
-  throw this.RError('BOT-007', "Implement extractResponseDataForAccessToken");
+  throw this.RError('BOT-006', "Implement extractResponseDataForAccessToken");
 };
 
 /**
@@ -179,7 +179,7 @@ Bot.prototype.extractResponseDataForAccessToken = function(req) {
  * @param {Bot~requestAccessTokenCallback} callback
  */
 Bot.prototype.requestAccessToken = function(responseData, callback) {
-  throw this.RError('BOT-008', "Implement requestAccessToken");
+  throw this.RError('BOT-007', "Implement requestAccessToken");
 };
 
 Bot.prototype.isUserAccessTokenCompatibleWithCurrentConfiguration = function (user) {
@@ -276,7 +276,7 @@ Bot.prototype.getDefaultRemainingTime = function(url){
  * @return {Number}
  */
 Bot.prototype.getRemainingRequestsFromResult = function(resultFromRequest) {
-  throw this.RError('BOT-009', "Implement getRemainingRequestsFromResult");
+  throw this.RError('BOT-008', "Implement getRemainingRequestsFromResult");
 };
 
 Bot.prototype.updateRemainingRequests = function(resultFromRequest, urls) {
@@ -329,16 +329,18 @@ Bot.prototype.updateRemainingRequests = function(resultFromRequest, urls) {
 };
 
 Bot.prototype.getCurrentRateLimitFile = function() {
+  var rateLimitsFile = require('path').join(this.rateLimitsFolder, this.currentConfiguration.name + '.json');
+
   if(this.currentConfiguration.name === undefined) {
     return null;
   }
 
-  if(this.isFileExist(this.rateLimitsFolder + this.currentConfiguration.name + '.json') === false) {
-    require('fs').writeFileSync(this.rateLimitsFolder + this.currentConfiguration.name + '.json', '[]');
+  if(this.isFileExist(rateLimitsFile) === false) {
+    require('fs').writeFileSync(rateLimitsFile, '[]');
     return JSON.parse('[]');
   }
 
-  return JSON.parse(require('fs').readFileSync(this.rateLimitsFolder + this.currentConfiguration.name + '.json'));
+  return JSON.parse(require('fs').readFileSync(rateLimitsFile));
 };
 
 Bot.prototype.getCurrentRateLimit = function() {
@@ -361,6 +363,7 @@ Bot.prototype.getCurrentRateLimit = function() {
 
 Bot.prototype.saveCurrentRateLimit = function(rateLimits) {
   var jsonFile = this.getCurrentRateLimitFile();
+  var rateLimitsFile = require('path').join(this.rateLimitsFolder, this.currentConfiguration.name + '.json');
   var idx = 0;
   var max = jsonFile.length;
   var found = false;
@@ -379,7 +382,7 @@ Bot.prototype.saveCurrentRateLimit = function(rateLimits) {
     })
   }
 
-  require('fs').writeFileSync(this.rateLimitsFolder + this.currentConfiguration.name + '.json', JSON.stringify(jsonFile));
+  require('fs').writeFileSync(rateLimitsFile, JSON.stringify(jsonFile));
 };
 
 Bot.prototype.hasRemainingRequests = function() {
@@ -443,7 +446,7 @@ Bot.prototype.loadModels = function() {
 
   for(; idx < countFiles; idx++) {
     className = files[idx].substr(0,1).toUpperCase() + files[idx].substr(1).replace('.js', '');
-    this.models[className] = require(this.modelsFolder + files[idx]);
+    this.models[className] = require(require('path').join(this.modelsFolder, files[idx]));
   }
 };
 
@@ -457,7 +460,7 @@ Bot.prototype.isFileExist = function(filepath) {
 };
 
 Bot.prototype.RError = function (code, message, file, lineNumber) {
-  var _RError = require(__dirname + '/rerror.js');
+  var _RError = require(require('path').join(__dirname, 'rerror.js'));
   return new _RError(code, message, file, lineNumber);
 };
 
@@ -475,32 +478,53 @@ Bot.prototype.arrayMin = function(array) {
 };
 
 Bot.prototype.getPrivateJobFile = function(job) {
-  var files = require('fs').readdirSync(this.privateJobsFolder);
-  var countFiles = files.length;
-  var idxFiles = 0;
-  job = job.toLowerCase().replace('.js', '');
+  job = job.toLowerCase().replace(/\.js$/, '');
+  job = job + '.js';
 
-  for(; idxFiles < countFiles; idxFiles++) {
-    if(files[idxFiles].toLowerCase().replace('.js', '') === job) {
-      return this.privateJobsFolder + files[i];
+  if (job.indexOf('/') !== -1) {
+    if(this.isFileExist(require('path').join(this.privateJobsFolder, job))) {
+      return require('path').join(this.privateJobsFolder, job);
     }
   }
-
-  return null;
+  else {
+    return this.searchDeepFile(job, this.privateJobsFolder);
+  }
 };
 
 Bot.prototype.getJobFile = function(job) {
-  var files = require('fs').readdirSync(this.jobsFolder);
-  var countFiles = files.length;
-  var idxFiles = 0;
-  job = job.toLowerCase().replace('.js', '');
+  job = job.toLowerCase().replace(/\.js$/, '');
+  job = job + '.js';
 
-  for(; idxFiles < countFiles; idxFiles++) {
-    if(files[idxFiles].toLowerCase().replace('.js', '') === job) {
-      return this.jobsFolder + files[idxFiles];
+  if (job.indexOf('/') !== -1) {
+    if(this.isFileExist(require('path').join(this.jobsFolder, job))) {
+      return require('path').join(this.jobsFolder, job);
     }
   }
+  else {
+    return this.searchDeepFile(job, this.jobsFolder);
+  }
+};
 
+Bot.prototype.searchDeepFile = function (searchFile, path) {
+  var files = require('fs').readdirSync(path);
+  var countFiles = files.length;
+  var idxFiles = 0;
+  var stats;
+  var file;
+
+  for(; idxFiles < countFiles; idxFiles++) {
+    stats = this.isFileExist(require('path').join(path, files[idxFiles]));
+    if(stats.isFile() && files[idxFiles].toLowerCase() === searchFile) {
+      return require('path').join(path, files[idxFiles]);
+    }
+    else if(stats.isDirectory()) {
+      file = this.searchDeepFile(searchFile, require('path').join(path, files[idxFiles]));
+      if(file !== null) {
+        return file;
+      }
+    }
+  }
+  
   return null;
 };
 
@@ -531,7 +555,7 @@ Bot.prototype.formatNewAccessToken = function(accessTokenData, scopes, callback)
  * @return {*}
  */
 Bot.prototype.getAccessTokenFromAccessTokenData = function(accessTokenData) {
-  throw this.RError('BOT-010', "Implement getAccessTokenFromAccessTokenData");
+  throw this.RError('BOT-009', "Implement getAccessTokenFromAccessTokenData");
 };
 
 /**
@@ -540,7 +564,7 @@ Bot.prototype.getAccessTokenFromAccessTokenData = function(accessTokenData) {
  * @return {*}
  */
 Bot.prototype.getTypeAccessTokenFromAccessTokenData = function(accessTokenData) {
-  throw this.RError('BOT-011', "Implement getTypeAccessTokenFromAccessTokenData");
+  throw this.RError('BOT-010', "Implement getTypeAccessTokenFromAccessTokenData");
 };
 
 /**
@@ -549,15 +573,16 @@ Bot.prototype.getTypeAccessTokenFromAccessTokenData = function(accessTokenData) 
  * @param {Bot~getUserForNewAccessTokenCallback} callback
  */
 Bot.prototype.getUserForNewAccessToken = function(formatAccessToken, callback) {
-  throw this.RError('BOT-012', "Implement getUserForNewAccessToken");
+  throw this.RError('BOT-011', "Implement getUserForNewAccessToken");
 };
 
 Bot.prototype.saveNewAccessToken = function(accessTokenData) {
-  if(!this.isFileExist(this.accessTokensFolder + this.currentConfiguration.name + '.json')) {
-    require('fs').writeFileSync(this.accessTokensFolder + this.currentConfiguration.name + '.json', '[]');
+  var accessTokensFile = require('path').join(this.accessTokensFolder, this.currentConfiguration.name + '.json');
+  if(!this.isFileExist(accessTokensFile)) {
+    require('fs').writeFileSync(accessTokensFile, '[]');
   }
 
-  var file = JSON.parse(require('fs').readFileSync(this.accessTokensFolder + this.currentConfiguration.name + '.json'));
+  var file = JSON.parse(require('fs').readFileSync(accessTokensFile));
   var countAccessToken = file.length;
   var idx = 0;
   var toAppend = true;
@@ -573,7 +598,7 @@ Bot.prototype.saveNewAccessToken = function(accessTokenData) {
     file.push(accessTokenData);
   }
 
-  require('fs').writeFileSync(this.accessTokensFolder + this.currentConfiguration.name + '.json', JSON.stringify(file));
+  require('fs').writeFileSync(accessTokensFile, JSON.stringify(file));
 };
 
 Bot.prototype.isCurrentAccessTokenCompatibleWithScope = function(scope) {

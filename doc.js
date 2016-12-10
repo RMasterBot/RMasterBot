@@ -54,7 +54,7 @@ Doc.prototype.loadBot = function() {
 };
 
 Doc.prototype.loadDoc = function() {
-  this.api = require(this.botConfigured.docsFolder + 'api.js');
+  this.api = require(require('path').join(this.botConfigured.docsFolder, 'api.js'));
 };
 
 Doc.prototype.showDoc = function() {

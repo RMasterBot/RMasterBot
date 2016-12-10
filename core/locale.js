@@ -2,7 +2,7 @@ function Locale(text){
   this.text = text;
   this.locale = 'en';
   this.translations = null;
-  this.languagesFolder = __dirname + '/../languages';
+  this.languagesFolder = require('path').join(__dirname, '..', 'languages');
 }
 
 Locale.prototype.localize = function() {
@@ -26,7 +26,7 @@ Locale.prototype.getLocale = function() {
 };
 
 Locale.prototype.getFileForCurrentLocale = function() {
-  var path = this.languagesFolder + '/' + this.locale + '.json';
+  var path = require('path').join(this.languagesFolder, this.locale + '.json');
   var fs = require('fs');
 
   try {

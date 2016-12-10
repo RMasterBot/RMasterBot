@@ -3,7 +3,7 @@ function Pid() {
   this.fs = require('fs');
 
   this.rootFolder = __dirname;
-  this.processFolder = this.rootFolder + '/process_ids/';
+  this.processFolder = require('path').join(this.rootFolder, 'process_ids');
   this.kill = null;
   this.bot = null;
   this.bots = null;
@@ -50,11 +50,12 @@ function Pid() {
 }
 
 Pid.prototype.getBots = function() {
-  if(this.isFileExists(this.rootFolder + '/bots.json') === false) {
+  var botsJsonFile = require('path').join(this.rootFolder, 'bots.json');
+  if(this.isFileExists(botsJsonFile) === false) {
     this.stopProcess('No bots installed');
   }
   
-  this.bots = JSON.parse(this.fs.readFileSync(this.rootFolder + '/bots.json', 'utf-8'));
+  this.bots = JSON.parse(this.fs.readFileSync(botsJsonFile, 'utf-8'));
 };
 
 Pid.prototype.getArguments = function() {
@@ -116,10 +117,12 @@ Pid.prototype.getAllPids = function() {
   var pidFiles = [];
   var i;
   var j;
+  var processIdsFolderBot;
 
   for(i = 0; i < lengthBots; i++) {
     this.bots[i].pids = [];
-    pidFiles = this.fs.readdirSync(this.processFolder + this.bots[i].bot_folder + '/');
+    processIdsFolderBot = require('path').join(this.processFolder, this.bots[i].bot_folder);
+    pidFiles = this.fs.readdirSync(processIdsFolderBot);
     lengthPids = pidFiles.length;
 
     for(j = 0; j < lengthPids; j++) {
@@ -128,12 +131,12 @@ Pid.prototype.getAllPids = function() {
         if(this.isRunning(pidId)) {
           this.bots[i].pids.push({
             pid: pidId,
-            file: this.processFolder + this.bots[i].bot_folder + '/' + pidFiles[j],
-            content: this.fs.readFileSync(this.processFolder + this.bots[i].bot_folder + '/' + pidFiles[j], 'utf8')
+            file: require('path').join(processIdsFolderBot, pidFiles[j]),
+            content: this.fs.readFileSync(require('path').join(processIdsFolderBot, pidFiles[j]), 'utf8')
           });
         }
         else {
-          this.fs.unlinkSync(this.processFolder + this.bots[i].bot_folder + '/' + pidFiles[j]);
+          this.fs.unlinkSync(require('path').join(processIdsFolderBot, pidFiles[j]));
         }
       }
     }

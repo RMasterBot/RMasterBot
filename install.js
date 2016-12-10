@@ -6,10 +6,10 @@ function Install() {
   this.fs = require('fs');
   this.countFollowRedirect = 3;
   this.rootFolder = __dirname;
-  this.zipFilepath = this.rootFolder + '/_bot.zip';
-  this.tempBotFolder = this.rootFolder + '/_bot';
-  this.botsInstalledFile = this.rootFolder + '/bots.json';
-  this.installFileFromNewBot = this.tempBotFolder + '/install.json';
+  this.zipFilepath = require('path').join(this.rootFolder, '_bot.zip');
+  this.tempBotFolder = require('path').join(this.rootFolder, '_bot');
+  this.botsInstalledFile = require('path').join(this.rootFolder, 'bots.json');
+  this.installFileFromNewBot = require('path').join(this.tempBotFolder, 'install.json');
   this.nodeModulesFolder = this.getNodeModulesFolder();
   this.foldersSupported = ['applications', 'docs', 'jobs', 'models'];
   this.foldersToCreate = ['access_tokens', 'applications', 'docs', 'downloads', 'jobs', 'models', 'private_jobs', 'process_ids', 'rate_limits'];
@@ -87,12 +87,12 @@ Install.prototype.askBotToInstall = function() {
     input: process.stdin,
     output: process.stdout
   });
-  rl.clearLine(process.stdin);
+  rl.clearLine(process.stdout, 0);
 
   function ask(){
     rl.question(question, function(answer){
       if(answer === 'q') {
-        rl.clearLine(process.stdin);
+        rl.clearLine(process.stdout, 0);
         rl.close();
         that.stopProcess('Stopped by user');
         return;
@@ -109,7 +109,7 @@ Install.prototype.askBotToInstall = function() {
           ask();
         }
         else {
-          rl.clearLine(process.stdin);
+          rl.clearLine(process.stdout, 0);
           rl.close();
           that.downloadBot();
         }
@@ -451,7 +451,7 @@ Install.prototype.resolveConflict = function(hasFolderProblem, hasNameProblem){
     output: process.stdout
   });
 
-  rl.clearLine(process.stdin);
+  rl.clearLine(process.stdout, 0);
 
   for(; idxBotsInstalled < countBotsInstalled; idxBotsInstalled++) {
     foldersTaken.push(botsInstalledJson[idxBotsInstalled].bot_folder);
@@ -555,7 +555,7 @@ Install.prototype.resolveConflict = function(hasFolderProblem, hasNameProblem){
   }
 
   function end() {
-    rl.clearLine(process.stdin);
+    rl.clearLine(process.stdout, 0);
     rl.close();
 
     that.copyTempBotToFinalDestination();
@@ -711,7 +711,7 @@ Install.prototype.copyFilesRecursive = function(srcPath, destPath, depth) {
 
 Install.prototype.copyInstallJson = function() {
   var fileContent = this.fs.readFileSync(this.installFileFromNewBot, 'utf8');
-  this.fs.writeFileSync(this.rootFolder + '/installs/' + this.botToInstallJson.bot_name + '.json' , fileContent);
+  this.fs.writeFileSync(require('path').join(this.rootFolder, 'installs', this.botToInstallJson.bot_name + '.json'), fileContent);
 };
 
 Install.prototype.launchPackageJson = function() {
@@ -744,7 +744,7 @@ Install.prototype.launchSetupConfiguration = function(modificationType) {
     input: process.stdin,
     output: process.stdout
   });
-  rl.clearLine(process.stdin);
+  rl.clearLine(process.stdout, 0);
 
   if(this.botToInstallJson.configuration.name === undefined) {
     this.stopProcess('Name missing in configuration file');
@@ -826,7 +826,7 @@ Install.prototype.launchSetupConfiguration = function(modificationType) {
       setConfigurationValue();
       return;
     }
-    rl.clearLine(process.stdin);
+    rl.clearLine(process.stdout, 0);
     rl.close();
 
     that.addBotToSavedBotsFile();
@@ -845,7 +845,7 @@ Install.prototype.resolveConflictConfiguration = function() {
     input: process.stdin,
     output: process.stdout
   });
-  rl.clearLine(process.stdin);
+  rl.clearLine(process.stdout, 0);
 
   function ask() {
     question = "A configuration is already setted, what do you want to do:\n";
@@ -854,13 +854,13 @@ Install.prototype.resolveConflictConfiguration = function() {
     question+= "  -> quit (q)\n";
     rl.question(question, function (answer) {
       if(answer === 'a') {
-        rl.clearLine(process.stdin);
+        rl.clearLine(process.stdout, 0);
         rl.close();
         that.choiceConflictConfiguration = 'add';
         that.launchSetupConfiguration('add');
       }
       else if(answer === 'e') {
-        rl.clearLine(process.stdin);
+        rl.clearLine(process.stdout, 0);
         rl.close();
         that.choiceConflictConfiguration = 'erase';
         that.launchSetupConfiguration('erase');

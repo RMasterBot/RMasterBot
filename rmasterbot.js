@@ -2,7 +2,7 @@ function RMasterBot(botName, configuration) {
   this.standalone = this.isStandalone();
   this.bot = null;
   this.bots = [];
-  this.botsFile = __dirname + '/bots.json';
+  this.botsFile = require('path').join(__dirname, 'bots.json');
   this.botSelectedIndex = null;
 
   this.getBotsInstalled();
@@ -37,7 +37,7 @@ RMasterBot.prototype.createBot = function(botName, configuration){
     throw module.exports.RError('RMB-002', 'Bot %s not found', botName);
   }
 
-  var bot = require(__dirname + '/applications/' + this.bots[this.botSelectedIndex].bot_folder + '/main.js');
+  var bot = require(require('path').join(__dirname, 'applications', this.bots[this.botSelectedIndex].bot_folder, 'main.js'));
   this.bot = new bot(
     this.bots[this.botSelectedIndex].bot_name,
     this.bots[this.botSelectedIndex].bot_folder,
@@ -116,6 +116,6 @@ module.exports.doBotJob = function doBotJob(bot, job, args, callback) {
 };
 
 module.exports.RError = function RError(code, message, file, lineNumber) {
-  var _RError = require(__dirname + '/core/rerror.js');
+  var _RError = require(require('path').join(__dirname, 'core', 'rerror.js'));
   return new _RError(code, message, file, lineNumber);
 };
