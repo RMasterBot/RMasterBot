@@ -539,7 +539,7 @@ Bot.prototype.formatNewAccessToken = function(accessTokenData, scopes, callback)
     "access_token": that.getAccessTokenFromAccessTokenData(accessTokenData),
     "type": that.getTypeAccessTokenFromAccessTokenData(accessTokenData),
     "user": null,
-    "scopes": scopes
+    "scopes": that.getScopeForAccessTokenServer(scopes)
   };
 
   that.getUserForNewAccessToken(formatAccessToken, function(err, user){
@@ -578,6 +578,14 @@ Bot.prototype.getTypeAccessTokenFromAccessTokenData = function(accessTokenData) 
  */
 Bot.prototype.getUserForNewAccessToken = function(formatAccessToken, callback) {
   throw this.RError('BOT-011', "Implement getUserForNewAccessToken");
+};
+
+Bot.prototype.getScopeForAccessTokenServer = function(scopes) {
+  if(scopes.length < 1) {
+    return this.defaultValues.scopes;
+  }
+
+  return scopes;
 };
 
 Bot.prototype.saveNewAccessToken = function(accessTokenData) {
