@@ -295,16 +295,17 @@ Install.prototype.unzipBot = function(){
   var file;
   var folderToCreate;
   var filepath;
+  var basepath = that.tempBotFolder + require('path').sep;
 
   require('yauzl').open(this.zipFilepath, {lazyEntries: true}, function(error, zipfile) {
-    if (error){
+    if(error) {
       that.stopProcess('Failed open zip: ' + error.toString());
       return;
     }
 
-    that.logInfo('Create temp folder at: ' + that.rootFolder);
+    that.logInfo('Create temp folder at: ' + that.tempBotFolder);
     that.fs.mkdirSync(that.tempBotFolder);
-    foldersCreated.push(that.tempBotFolder + '/');
+    foldersCreated.push(basepath);
 
     zipfile.readEntry();
 
@@ -313,25 +314,32 @@ Install.prototype.unzipBot = function(){
         zipfile.readEntry();
       }
       else {
-        zipfile.openReadStream(entry, function(err, readStream) {
-          if (err){
+        zipfile.openReadStream(entry, function(error, readStream) {
+          if(error) {
             that.stopProcess('Failed open file in zip: ' + entry.fileName);
             return;
           }
 
           file = that.extractPathAndFileFromZip(entry.fileName);
-          folderToCreate = that.tempBotFolder + file.path;
+          folderToCreate = require('path').join(that.tempBotFolder, file.path);
           if(foldersCreated.indexOf(folderToCreate) === -1) {
-            that.fs.mkdirSync(folderToCreate);
+            var parts = folderToCreate.replace(basepath, '').split(require('path').sep);
+            for(var i = 0; i < parts.length; i++) {
+              var parentFolderToCreate = require('path').join(basepath, parts.slice(0,i+1).join(require('path').sep));
+              try {
+                that.fs.mkdirSync(parentFolderToCreate);
+              }
+              catch(e) {
+                //
+              }
+            }
             foldersCreated.push(folderToCreate);
           }
 
-          filepath = that.tempBotFolder + file.path + '/' + file.file;
+          filepath = require('path').join(that.tempBotFolder, file.path, file.file);
           if(file.path === '/') {
-            filepath = that.tempBotFolder + file.path + file.file;
+            filepath = require('path').join(that.tempBotFolder, file.path, file.file);
           }
-
-          filepath = filepath.toLowerCase();
 
           readStream.pipe(that.fs.createWriteStream(filepath));
           readStream.on("end", function() {
