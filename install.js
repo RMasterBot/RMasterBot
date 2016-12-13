@@ -1,4 +1,6 @@
 function Install() {
+  this.sep = require('path').sep;
+  this.path = require('path');
   this.isInteractifMode = false;
   this.botToInstall = null;
   this.botType = null;
@@ -6,13 +8,13 @@ function Install() {
   this.fs = require('fs');
   this.countFollowRedirect = 3;
   this.rootFolder = __dirname;
-  this.zipFilepath = require('path').join(this.rootFolder, '_bot.zip');
-  this.tempBotFolder = require('path').join(this.rootFolder, '_bot');
-  this.botsInstalledFile = require('path').join(this.rootFolder, 'bots.json');
-  this.installFileFromNewBot = require('path').join(this.tempBotFolder, 'install.json');
+  this.zipFilepath = this.path.join(this.rootFolder, '_bot.zip');
+  this.tempBotFolder = this.path.join(this.rootFolder, '_bot');
+  this.botsInstalledFile = this.path.join(this.rootFolder, 'bots.json');
+  this.installFileFromNewBot = this.path.join(this.tempBotFolder, 'install.json');
   this.nodeModulesFolder = this.getNodeModulesFolder();
-  this.foldersSupported = ['applications', 'docs', 'jobs', 'models'];
-  this.foldersToCreate = ['access_tokens', 'applications', 'docs', 'downloads', 'jobs', 'models', 'private_jobs', 'process_ids', 'rate_limits'];
+  this.foldersSupported = ['applications', 'docs', 'jobs', 'models', 'test'];
+  this.foldersToCreate = ['access_tokens', 'applications', 'docs', 'downloads', 'jobs', 'models', 'private_jobs', 'process_ids', 'rate_limits', this.path.join('test', 'bots')];
   this.maxDepthCopyFolder = 3;
   this.botToInstallJson = {};
   this.hasToAddBot = true;
@@ -28,11 +30,11 @@ Install.prototype.getNodeModulesFolder = function() {
   }
 
   var _tmp = [];
-  var parts = __dirname.split(require('path').sep);
+  var parts = __dirname.split(this.sep);
   for(var idx = 0 ; idx < parts.length-2; idx++) {
     _tmp.push(parts[idx]);
   }
-  return _tmp.join(require('path').sep);
+  return _tmp.join(this.sep);
 };
 
 Install.prototype.isStandalone = function() {
@@ -89,12 +91,17 @@ Install.prototype.askBotToInstall = function() {
   });
   rl.clearLine(process.stdout, 0);
 
+  function releaseReadline() {
+    rl.clearLine(process.stdout, 0);
+    rl.close();
+  }
+
   function ask(){
     rl.question(question, function(answer){
       if(answer === 'q') {
-        rl.clearLine(process.stdout, 0);
-        rl.close();
-        that.stopProcess('Stopped by user');
+        releaseReadline();
+        that.cleanup();
+        that.logInfo('Stopped by user');
         return;
       }
 
@@ -109,8 +116,7 @@ Install.prototype.askBotToInstall = function() {
           ask();
         }
         else {
-          rl.clearLine(process.stdout, 0);
-          rl.close();
+          releaseReadline();
           that.downloadBot();
         }
       }
@@ -295,7 +301,7 @@ Install.prototype.unzipBot = function(){
   var file;
   var folderToCreate;
   var filepath;
-  var basepath = that.tempBotFolder + require('path').sep;
+  var basepath = that.tempBotFolder + that.sep;
 
   require('yauzl').open(this.zipFilepath, {lazyEntries: true}, function(error, zipfile) {
     if(error) {
@@ -321,11 +327,11 @@ Install.prototype.unzipBot = function(){
           }
 
           file = that.extractPathAndFileFromZip(entry.fileName);
-          folderToCreate = require('path').join(that.tempBotFolder, file.path);
+          folderToCreate = that.path.join(that.tempBotFolder, file.path);
           if(foldersCreated.indexOf(folderToCreate) === -1) {
-            var parts = folderToCreate.replace(basepath, '').split(require('path').sep);
+            var parts = folderToCreate.replace(basepath, '').split(that.sep);
             for(var i = 0; i < parts.length; i++) {
-              var parentFolderToCreate = require('path').join(basepath, parts.slice(0,i+1).join(require('path').sep));
+              var parentFolderToCreate = that.path.join(basepath, parts.slice(0,i+1).join(that.sep));
               try {
                 that.fs.mkdirSync(parentFolderToCreate);
               }
@@ -336,9 +342,9 @@ Install.prototype.unzipBot = function(){
             foldersCreated.push(folderToCreate);
           }
 
-          filepath = require('path').join(that.tempBotFolder, file.path, file.file);
+          filepath = that.path.join(that.tempBotFolder, file.path, file.file);
           if(file.path === '/') {
-            filepath = require('path').join(that.tempBotFolder, file.path, file.file);
+            filepath = that.path.join(that.tempBotFolder, file.path, file.file);
           }
 
           readStream.pipe(that.fs.createWriteStream(filepath));
@@ -458,7 +464,6 @@ Install.prototype.resolveConflict = function(hasFolderProblem, hasNameProblem){
     input: process.stdin,
     output: process.stdout
   });
-
   rl.clearLine(process.stdout, 0);
 
   for(; idxBotsInstalled < countBotsInstalled; idxBotsInstalled++) {
@@ -468,7 +473,8 @@ Install.prototype.resolveConflict = function(hasFolderProblem, hasNameProblem){
 
   function eraseBot() {
     that.hasToAddBot = false;
-    end();
+    releaseReadline();
+    that.copyTempBotToFinalDestination();
   }
 
   function changeFolder() {
@@ -505,7 +511,8 @@ Install.prototype.resolveConflict = function(hasFolderProblem, hasNameProblem){
         changeName();
       }
       else {
-        end();
+        releaseReadline();
+        that.copyTempBotToFinalDestination();
       }
     });
   }
@@ -534,7 +541,8 @@ Install.prototype.resolveConflict = function(hasFolderProblem, hasNameProblem){
       console.log('New name is ' + answer);
       that.botToInstallJson.bot_name = answer;
 
-      end();
+      releaseReadline();
+      that.copyTempBotToFinalDestination();
     });
   }
   
@@ -553,8 +561,9 @@ Install.prototype.resolveConflict = function(hasFolderProblem, hasNameProblem){
         eraseBot();
       }
       else if(answer == 'q') {
-        that.stopProcess('Stopped by user');
-        return;
+        that.cleanup();
+        that.logInfo('Stopped by user');
+        releaseReadline();
       }
       else {
         resolveBot();
@@ -562,13 +571,11 @@ Install.prototype.resolveConflict = function(hasFolderProblem, hasNameProblem){
     });
   }
 
-  function end() {
+  function releaseReadline() {
     rl.clearLine(process.stdout, 0);
     rl.close();
-
-    that.copyTempBotToFinalDestination();
   }
-  
+
   if(hasFolderProblem && hasNameProblem) {
     resolveBot();
   }
@@ -581,7 +588,8 @@ Install.prototype.resolveConflict = function(hasFolderProblem, hasNameProblem){
     changeName();
   }
   else {
-    end();
+    releaseReadline();
+    that.copyTempBotToFinalDestination();
   }
 };
 
@@ -643,9 +651,10 @@ Install.prototype.copyTempBotToFinalDestination = function() {
   var countFoldersToCreate = this.foldersToCreate.length;
   var idxFoldersToCreate = 0;
   var folder;
+  var unitTestFolder = this.path.join('test','bots');
 
   for(; idxFoldersToCreate < countFoldersToCreate; idxFoldersToCreate++) {
-    folder = this.rootFolder + '/' + this.foldersToCreate[idxFoldersToCreate] + '/' + this.botToInstallJson.bot_name;
+    folder = this.path.join(this.rootFolder, this.foldersToCreate[idxFoldersToCreate], this.botToInstallJson.bot_name);
     if (this.isFileExists(folder) === false || this.isFileExists(folder).isDirectory() === false) {
       try {
         this.fs.mkdirSync(folder);
@@ -656,7 +665,12 @@ Install.prototype.copyTempBotToFinalDestination = function() {
       }
     }
 
-    this.copyFilesRecursive(this.tempBotFolder + '/' + this.foldersToCreate[idxFoldersToCreate], folder, 0);
+    if(this.foldersToCreate[idxFoldersToCreate] == unitTestFolder) {
+      this.copyFilesRecursive(this.path.join(this.tempBotFolder, 'test'), folder, 0);
+    }
+    else {
+      this.copyFilesRecursive(this.path.join(this.tempBotFolder, this.foldersToCreate[idxFoldersToCreate]), folder, 0);
+    }
   }
 
   this.logInfo('New bot "' + this.botToInstallJson.bot_name + '" is installed in folder "' + this.botToInstallJson.bot_folder + '"');
@@ -719,7 +733,7 @@ Install.prototype.copyFilesRecursive = function(srcPath, destPath, depth) {
 
 Install.prototype.copyInstallJson = function() {
   var fileContent = this.fs.readFileSync(this.installFileFromNewBot, 'utf8');
-  this.fs.writeFileSync(require('path').join(this.rootFolder, 'installs', this.botToInstallJson.bot_name + '.json'), fileContent);
+  this.fs.writeFileSync(this.path.join(this.rootFolder, 'installs', this.botToInstallJson.bot_name + '.json'), fileContent);
 };
 
 Install.prototype.launchPackageJson = function() {
@@ -827,15 +841,21 @@ Install.prototype.launchSetupConfiguration = function(modificationType) {
     }
   }
 
+  function releaseReadline() {
+    rl.clearLine(process.stdout, 0);
+    rl.close();
+  }
+
   function end() {
     console.log(configuration.name);
+
     if(configuration.name === "string") {
       idxGlobal = 0;
       setConfigurationValue();
       return;
     }
-    rl.clearLine(process.stdout, 0);
-    rl.close();
+
+    releaseReadline();
 
     that.addBotToSavedBotsFile();
 
@@ -855,6 +875,11 @@ Install.prototype.resolveConflictConfiguration = function() {
   });
   rl.clearLine(process.stdout, 0);
 
+  function releaseReadline() {
+    rl.clearLine(process.stdout, 0);
+    rl.close();
+  }
+
   function ask() {
     question = "A configuration is already setted, what do you want to do:\n";
     question+= "  -> erase (e)\n";
@@ -862,19 +887,17 @@ Install.prototype.resolveConflictConfiguration = function() {
     question+= "  -> quit (q)\n";
     rl.question(question, function (answer) {
       if(answer === 'a') {
-        rl.clearLine(process.stdout, 0);
-        rl.close();
+        releaseReadline();
         that.choiceConflictConfiguration = 'add';
         that.launchSetupConfiguration('add');
       }
       else if(answer === 'e') {
-        rl.clearLine(process.stdout, 0);
-        rl.close();
+        releaseReadline();
         that.choiceConflictConfiguration = 'erase';
         that.launchSetupConfiguration('erase');
       }
       else if(answer === 'q') {
-        rl.close();
+        releaseReadline();
         that.endInstall();
       }
       else {
