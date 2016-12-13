@@ -39,3 +39,6 @@ bots.json
 
 test.js
 coverage
+
+test/bots/*
+!test/bots/.gitkeep
