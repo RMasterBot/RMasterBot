@@ -847,8 +847,6 @@ Install.prototype.launchSetupConfiguration = function(modificationType) {
   }
 
   function end() {
-    console.log(configuration.name);
-
     if(configuration.name === "string") {
       idxGlobal = 0;
       setConfigurationValue();
