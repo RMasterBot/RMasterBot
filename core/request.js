@@ -133,6 +133,11 @@ Request.prototype.request = function(parameters, callback) {
   var postData = '';
   var bodyToWrite = [];
 
+  validateParameters(parameters);
+  if(parameters.body) {
+    postData = getKeyFromParametersAndType('body', parameters, 'string', '');
+  }
+
   parameters = this.formatParametersForRequest(parameters);
 
   options = {
@@ -558,6 +563,7 @@ module.exports = Request;
  * @property {Object|undefined} [files] - Files
  * @property {string|undefined} [auth] - Auth
  * @property {string|undefined} [httpModule] - Http module from nodejs
+ * @property {string|undefined} [body] - Body
  */
 /**
  * Clean Parameters
