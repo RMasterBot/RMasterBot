@@ -1,3 +1,7 @@
+String.prototype.ucfirst = function() {
+  return this.charAt(0).toUpperCase() + this.slice(1);
+};
+
 function trimAndProtect(item) {
   item = item.trim();
   item = item.replace(/\'/g,"\\'");
@@ -48,6 +52,7 @@ function validate(value, validators) {
 function Sdk() {
   this.action = null;
   this.botName = null;
+  this.botClassName = null;
   this.path = null;
   this.botNameSrc = null;
   this.botNameDst = null;
@@ -58,7 +63,7 @@ function Sdk() {
   this.rootFolder = __dirname;
   this.botsInstalledFile = require('path').join(this.rootFolder, 'bots.json');
   this.botsInstalledJson = null;
-  this.foldersToCreate = ['access_tokens', 'applications', 'docs', 'downloads', 'jobs', 'models', 'private_jobs', 'process_ids', 'rate_limits'];
+  this.foldersToCreate = ['access_tokens', 'applications', 'docs', 'downloads', 'jobs', 'models', 'private_jobs', 'process_ids', 'rate_limits', require('path').join('test','bots')];
   this.maxDepthCopyFolder = 3;
 
   this.extractArguments();
@@ -75,8 +80,11 @@ Sdk.prototype.showHelp = function() {
 
   console.log("\n" + 'Usage:');
   console.log("    " + 'node sdk create <bot_name> [bot_folder]');
-  console.log("    " + 'node sdk duplicate <bot_name_src> <bot_name_dst> [bot_folder]');
   //console.log("    " + 'node sdk export <bot_name> <path>');
+  //console.log("    " + 'node sdk duplicate <bot_name_src> <bot_name_dst> [bot_folder]');
+  //console.log("    " + 'node sdk delete <bot_name>');
+  //console.log("    " + 'node sdk n_job <bot_name> <job_name>');
+  //console.log("    " + 'node sdk n_model <bot_name> <model_name>');
 
   console.log("\n" + 'Options:');
   console.log("    " + 'bot_name        bot name');
@@ -91,7 +99,7 @@ Sdk.prototype.showHelp = function() {
 Sdk.prototype.extractArguments = function(){
   var idx = 3;
   var argc = process.argv.length;
-  var actions = ['create','export','duplicate'];
+  var actions = ['create','export','duplicate','delete','n_job','n_model'];
 
   if(process.argv.indexOf('-h') !== -1 || process.argv.indexOf('--help') !== -1) {
     this.showHelp();
@@ -270,12 +278,17 @@ Sdk.prototype.askInformationsForCreateBot = function() {
   ];
   var countQuestions = questions.length;
   var idx = 0;
+  this.botClassName = this.botName.ucfirst();
   var rl = require('readline').createInterface({
     input: process.stdin,
     output: process.stdout
   });
-
   rl.clearLine(process.stdout, 0);
+
+  function releaseReadline() {
+    rl.clearLine(process.stdout, 0);
+    rl.close();
+  }
 
   function next() {
     idx++;
@@ -284,6 +297,7 @@ Sdk.prototype.askInformationsForCreateBot = function() {
       ask();
     }
     else {
+      releaseReadline();
       that.createBot(questions);
     }
   }
@@ -301,6 +315,7 @@ Sdk.prototype.askInformationsForCreateBot = function() {
       }
     });
   }
+
   ask();
 };
 
@@ -308,22 +323,30 @@ Sdk.prototype.createBot = function(parameters){
   var idx = 0;
   var countFolders = this.foldersToCreate.length;
   var pathToCreate;
-  var mainFileContent;
 
   for(; idx < countFolders; idx++) {
-    pathToCreate = require('path').join(this.rootFolder, this.foldersToCreate[idx], this.botFolderDst);
-    //this.createFolder(pathToCreate);
+    pathToCreate = require('path').join(this.rootFolder, this.foldersToCreate[idx], this.botFolderDst.toLowerCase());
+    this.createFolder(pathToCreate);
   }
 
-  mainFileContent = this.completeMainFile(parameters);
-  //require('fs').writeFileSync(require('path').join(this.rootFolder, 'applications', this.botFolderDst, 'main.js'), mainFile);
-  console.log(mainFileContent);
+  require('fs').writeFileSync(require('path').join(this.rootFolder, 'applications', this.botFolderDst.toLowerCase(), 'main.js'), this.completeMainFile(parameters));
 
-  //this.saveNewBotInInstalledJson();
+  this.saveNewBotInInstalledJson();
+
   this.end();
 };
 
 Sdk.prototype.completeMainFile = function(parameters) {
+  var httpModule = '';
+  if(parameters[1].a.length > 0) {
+    httpModule = "\n"+`  this.defaultValues.httpModule = '${parameters[1].a}';`;
+  }
+
+  var pathPrefix = '';
+  if(parameters[2].a.length > 0) {
+    pathPrefix = "\n"+`  this.defaultValues.pathPrefix = '${parameters[2].a}';`;
+  }
+
   var methods = '';
   if(parameters[3].a.length > 0) {
     methods = "\n"+`  this.validHttpMethods = [${parameters[3].a}];` + "\n";
@@ -333,16 +356,6 @@ Sdk.prototype.completeMainFile = function(parameters) {
   /*if(parameters[4].a.length > 0) {
     port = `this.defaultValues.port = ${parameters[3].a};`;
   }*/
-
-  var pathPrefix = '';
-  if(parameters[2].a.length > 0) {
-    pathPrefix = "\n"+`  this.defaultValues.pathPrefix = '${parameters[2].a}';`;
-  }
-
-  var httpModule = '';
-  if(parameters[1].a.length > 0) {
-    httpModule = "\n"+`  this.defaultValues.httpModule = '${parameters[1].a}';`;
-  }
 
   var scopes = '';
   if(parameters[4].a.length > 0) {
@@ -359,47 +372,157 @@ Sdk.prototype.completeMainFile = function(parameters) {
     remainingTime = "\n"+`  this.defaultValues.defaultRemainingTime = 60*${parameters[6].a};`;
   }
 
-  var ats = `${this.botName}.prototype.addQueryAccessToken = function(get) {
+  var ats = `
+/**
+ * Add access token to query parameters
+ * @param {Bot~doRequestParameters} parameters
+ */
+${this.botClassName}.prototype.addQueryAccessToken = function(parameters) {
   get.access_token = this.accessToken.access_token;
 
   return get;
 };
 
-${this.botName}.prototype.getRemainingRequestsFromResult = function(resultFromRequest) {
-  throw this.RError('XXX-009', "Implement getRemainingRequestsFromResult");
+/**
+ * Get remaining requests from result 
+ * @param {Request~Response} resultFromRequest
+ * @return {Number}
+ */
+${this.botClassName}.prototype.getRemainingRequestsFromResult = function(resultFromRequest) {
+  throw this.RError('XXX-008', "Implement getRemainingRequestsFromResult");
+  // return resultFromRequest.headers['x-ratelimit-remaining'] >> 0;
 };
 
-${this.botName}.prototype.getAccessTokenUrl = function(scopes) {
-  throw this.RError('XXX-006', "Implement getAccessTokenUrl");
+/**
+ * Get url for Access Token when you have to authorize an application
+ * @param {string} scopes
+ * @return {string} url
+ */
+${this.botClassName}.prototype.getAccessTokenUrl = function(scopes) {
+  throw this.RError('XXX-005', "Implement getAccessTokenUrl");
+  /*
+  return 'https://example.com/oauth/?'
+    + 'response_type=code&'
+    + 'redirect_uri=' + this.currentConfiguration.callback_url + '&'
+    + 'client_id=' + this.currentConfiguration.consumer_key + '&'
+    + 'scope=' + this.getScopeForAccessTokenServer(scopes);
+  */
 };
 
-${this.botName}.prototype.extractResponseDataForAccessToken = function(req) {
-  throw this.RError('XXX-007', "Implement extractResponseDataForAccessToken");
+/**
+ * Extract response in data for Access Token
+ * @param {Object} req request from local node server
+ * @return {*} code or something from response
+ */
+${this.botClassName}.prototype.extractResponseDataForAccessToken = function(req) {
+  throw this.RError('XXX-006', "Implement extractResponseDataForAccessToken");
+  /*
+  var query = require('url').parse(req.url, true).query;
+
+  if(query.code === undefined) {
+    return null;
+  }
+
+  return query.code;
+  */
 };
 
-${this.botName}.prototype.requestAccessToken = function(responseData, callback) {
-  throw this.RError('XXX-008', "Implement requestAccessToken");
+/**
+ * Request Access Token after getting code
+ * @param {string} responseData
+ * @param {Bot~requestAccessTokenCallback} callback
+ */
+${this.botClassName}.prototype.requestAccessToken = function(responseData, callback) {
+  throw this.RError('XXX-007', "Implement requestAccessToken");
+  /*
+  var uri = 'grant_type=authorization_code&'
+    + 'client_id=' + this.currentConfiguration.consumer_key + '&'
+    + 'client_secret=' + this.currentConfiguration.consumer_secret + '&'
+    + 'code=' + responseData;
+
+  var params = {
+    method: 'POST',
+    path: 'oauth/token?' + uri
+  };
+
+  this.request(params, function(error, result){
+    if(error) {
+      callback(error, null);
+      return;
+    }
+
+    if(result.statusCode === 200) {
+      callback(null, JSON.parse(result.data));
+    }
+    else {
+      callback(JSON.parse(result.data), null);
+    }
+  });
+  */
 };
 
-${this.botName}.prototype.getAccessTokenFromAccessTokenData = function(accessTokenData) {
-  throw this.RError('XXX-010', "Implement getAccessTokenFromAccessTokenData");
+/**
+ * getAccessTokenFromAccessTokenData
+ * @param {*} accessTokenData
+ * @return {*}
+ */
+${this.botClassName}.prototype.getAccessTokenFromAccessTokenData = function(accessTokenData) {
+  throw this.RError('XXX-009', "Implement getAccessTokenFromAccessTokenData");
+  // return accessTokenData.access_token;
 };
 
-${this.botName}.prototype.getTypeAccessTokenFromAccessTokenData = function(accessTokenData) {
-  throw this.RError('XXX-011', "Implement getTypeAccessTokenFromAccessTokenData");
+/**
+ * getTypeAccessTokenFromAccessTokenData
+ * @param {*} accessTokenData
+ * @return {*}
+ */
+${this.botClassName}.prototype.getTypeAccessTokenFromAccessTokenData = function(accessTokenData) {
+  throw this.RError('XXX-010', "Implement getTypeAccessTokenFromAccessTokenData");
+  //noinspection JSUnresolvedVariable
+  // return accessTokenData.token_type;
 };
 
-${this.botName}.prototype.getUserForNewAccessToken = function(formatAccessToken, callback) {
-  throw this.RError('XXX-012', "Implement getUserForNewAccessToken");
+/**
+ * getUserForNewAccessToken
+ * @param {*} formatAccessToken
+ * @param {Bot~getUserForNewAccessTokenCallback} callback
+ */
+${this.botClassName}.prototype.getUserForNewAccessToken = function(formatAccessToken, callback) {
+  throw this.RError('XXX-011', "Implement getUserForNewAccessToken");
+  /*
+  var that = this;
+
+  that.setCurrentAccessToken(formatAccessToken.access_token);
+  that.verifyAccessTokenScopesBeforeCall = false;
+  this.me(function(err, user){
+    that.verifyAccessTokenScopesBeforeCall = true;
+    if(err) {
+      callback(err, null);
+    }
+    else {
+      var username = (user !== null) ? user.getUsername() : null;
+      callback(null, username);
+    }
+  });
+  */
 };` + "\n\n";
 
   if(parameters[7].a === 'no') {
     ats = '';
   }
-  
+
   return `var Bot = require(require('path').join('..','..','core','bot.js'));
 
-function ${this.botName}(name, folder, allConfigurations){
+/**
+ * ${this.botClassName} Bot
+ * @class ${this.botClassName}
+ * @augments Bot
+ * @param {string} name
+ * @param {string} folder
+ * @param {${this.botClassName}~Configuration[]} allConfigurations
+ * @constructor
+ */
+function ${this.botClassName}(name, folder, allConfigurations){
   Bot.call(this, name, folder, allConfigurations);
   ${methods}
   this.defaultValues.hostname = '${parameters[0].a}';
@@ -407,38 +530,54 @@ function ${this.botName}(name, folder, allConfigurations){
   ${remainingRequest}${remainingTime}
 }
 
-${this.botName}.prototype = new Bot();
-${this.botName}.prototype.constructor = ${this.botName};
+${this.botClassName}.prototype = new Bot();
+${this.botClassName}.prototype.constructor = ${this.botClassName};
 
 /**
  * Prepare and complete parameters for request
  * @param {Bot~doRequestParameters} parameters
  * @param {Bot~requestCallback|*} callback
  */
-${this.botName}.prototype.prepareRequest = function(parameters, callback) {
+${this.botClassName}.prototype.prepareRequest = function(parameters, callback) {
   this.doRequest(parameters, callback);
 };
 
 /**
  * API example
- * @param {${this.botName}~requestCallback} callback
+ * @param {${this.botClassName}~requestCallback} callback
  */
-${this.botName}.prototype.example = function(callback) {
+${this.botClassName}.prototype.example = function(callback) {
   var params = {
-    method: 'GET'
-    path: 'example',
+    method: 'GET',
+    path: 'example'
   };
 
   this.prepareRequest(params, callback);
 };
 
-${ats}module.exports = ${this.botName};`;
+${ats}module.exports = ${this.botClassName};
+
+/**
+ * ${this.botClassName} Configuration
+ * @typedef {Object} ${this.botClassName}~Configuration
+ * @property {string} name
+ * @property {string} consumer_key
+ * @property {string} consumer_secret
+ * @property {string} access_token
+ * @property {string} callback_url
+ * @property {string} scopes
+ */
+/**
+ * Request callback
+ * @callback ${this.botClassName}~requestCallback
+ * @param {Error|string|null} error - Error
+ * @param {*} data
+ */
+`;
 };
 
 Sdk.prototype.saveNewBotInInstalledJson = function(){
   console.log('saveNewBotInInstalledJson');
-
-  this.end();
 };
 
 Sdk.prototype.askConfirmEraseBotNameDst = function() {
@@ -626,7 +765,6 @@ Sdk.prototype.isFileExists = function(path) {
 
 Sdk.prototype.end = function() {
   this.logInfo('Done');
-  process.exit(0);
 };
 
 Sdk.prototype.logInfo = function(string) {
