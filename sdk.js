@@ -50,7 +50,10 @@ function validate(value, validators) {
 }
 
 function Sdk() {
+  this.actionsAvailable = ['create','export','duplicate','delete'];
+  this.typesAvailable = ['bot', 'folder', 'job', 'model'];
   this.action = null;
+  this.type = null;
   this.botName = null;
   this.botClassName = null;
   this.path = null;
@@ -59,6 +62,11 @@ function Sdk() {
   this.botFolderDst = null;
   this.hasToConfirmEraseBotNameDst = false;
   this.hasToConfirmEraseBotFolderDst = false;
+  this.folderToDelete = null;
+  this.jobName = null;
+  this.modelName = null;
+  this.jobFile = null;
+  this.modelFile = null;
 
   this.rootFolder = __dirname;
   this.botsInstalledFile = require('path').join(this.rootFolder, 'bots.json');
@@ -70,21 +78,22 @@ function Sdk() {
 
   this.loadInstalledBots();
 
-  this.checkArguments();
+  this.checkCommand();
 
-  this.launch();
+  this.execute();
 }
 
 Sdk.prototype.showHelp = function() {
   console.log("\n" + 'Sdk for RMasterBot.');
 
   console.log("\n" + 'Usage:');
-  console.log("    " + 'node sdk create <bot_name> [bot_folder]');
-  //console.log("    " + 'node sdk export <bot_name> <path>');
-  //console.log("    " + 'node sdk duplicate <bot_name_src> <bot_name_dst> [bot_folder]');
-  //console.log("    " + 'node sdk delete <bot_name>');
-  //console.log("    " + 'node sdk n_job <bot_name> <job_name>');
-  //console.log("    " + 'node sdk n_model <bot_name> <model_name>');
+  console.log("    " + 'node sdk create bot <bot_name> [bot_folder]');
+  console.log("    " + 'node sdk create job <bot_name> <job_name>');
+  console.log("    " + 'node sdk create model <bot_name> <model_name>');
+  console.log("    " + 'node sdk export bot <bot_name> <path>');
+  console.log("    " + 'node sdk duplicate bot <bot_name_src> <bot_name_dst> [bot_folder]');
+  console.log("    " + 'node sdk delete bot <bot_name>');
+  console.log("    " + 'node sdk delete folder <bot_folder>');
 
   console.log("\n" + 'Options:');
   console.log("    " + 'bot_name        bot name');
@@ -92,6 +101,8 @@ Sdk.prototype.showHelp = function() {
   console.log("    " + 'bot_name_dst    bot name destination');
   console.log("    " + 'bot_folder      bot folder destination');
   console.log("    " + 'path            path to the folder for export');
+  console.log("    " + 'job_name        job name');
+  console.log("    " + 'model_name      model name');
 
   process.exit(1);
 };
@@ -99,60 +110,123 @@ Sdk.prototype.showHelp = function() {
 Sdk.prototype.extractArguments = function(){
   var idx = 3;
   var argc = process.argv.length;
-  var actions = ['create','export','duplicate','delete','n_job','n_model'];
 
   if(process.argv.indexOf('-h') !== -1 || process.argv.indexOf('--help') !== -1) {
     this.showHelp();
   }
 
+  this.extractActionArgument();
+  this.extractTypeArgument();
+  this.extractOptionsArgument();
+};
+
+Sdk.prototype.extractActionArgument = function() {
   if(process.argv[2] === undefined) {
     this.stopProcess('No action');
   }
 
-  this.action = process.argv[2];
-
-  if(actions.indexOf(this.action) === -1) {
+  if(this.actionsAvailable.indexOf(process.argv[2]) === -1) {
     this.stopProcess('action not recognize');
   }
 
-  if(this.action === 'create') {
-    if(process.argv[3] === undefined) {
-      this.stopProcess('bot_name is required');
-    }
+  this.action = process.argv[2];
+};
 
-    this.botName = process.argv[3];
-    this.botFolderDst = process.argv[4] || this.botName;
+Sdk.prototype.extractTypeArgument = function() {
+  if(process.argv[3] === undefined) {
+    this.stopProcess('No type');
   }
-  else if(this.action === 'duplicate') {
-    if(process.argv[3] === undefined) {
-      this.stopProcess('bot_name_src and bot_name_dst is required');
-    }
 
-    if(process.argv[4] === undefined) {
-      this.stopProcess('bot_name_dst is required');
-    }
-
-    this.botNameSrc = process.argv[3];
-    this.botNameDst = process.argv[4];
-    this.botFolderDst = process.argv[5] || this.botName;
+  if(this.typesAvailable.indexOf(process.argv[3]) === -1) {
+    this.stopProcess('type not recognize');
   }
-  else if(this.action === 'export') {
-    if(process.argv[3] === undefined) {
-      this.stopProcess('bot_name and path is required');
-    }
 
-    if(process.argv[4] === undefined) {
-      this.stopProcess('path is required');
-    }
+  this.type = process.argv[3];
+};
 
-    this.botName = process.argv[3];
-    this.path = process.argv[4];
+Sdk.prototype.extractOptionsArgument = function() {
+  var method = 'extractOptions' + this.action.ucfirst() + this.type.ucfirst();
+  if(this[method]) {
+    this[method]();
   }
 };
 
-Sdk.prototype.stopProcess = function(exception) {
-  require('npmlog').error('SDK', exception);
-  process.exit(-1);
+Sdk.prototype.extractOptionsCreateBot = function() {
+  if(process.argv[4] === undefined) {
+    this.stopProcess('bot_name is required');
+  }
+
+  this.botName = process.argv[4];
+  this.botFolderDst = process.argv[5] || this.botName;
+};
+
+Sdk.prototype.extractOptionsCreateJob = function() {
+  if(process.argv[4] === undefined) {
+    this.stopProcess('bot_name is required');
+  }
+
+  if(process.argv[5] === undefined) {
+    this.stopProcess('job_name is required');
+  }
+
+  this.botName = process.argv[4];
+  this.jobName = process.argv[5];
+};
+
+Sdk.prototype.extractOptionsCreateModel = function() {
+  if(process.argv[4] === undefined) {
+    this.stopProcess('bot_name is required');
+  }
+
+  if(process.argv[5] === undefined) {
+    this.stopProcess('model_name is required');
+  }
+
+  this.botName = process.argv[4];
+  this.modelName = process.argv[5];
+};
+
+Sdk.prototype.extractOptionsExportBot = function() {
+  if(process.argv[4] === undefined) {
+    this.stopProcess('bot_name and path is required');
+  }
+
+  if(process.argv[5] === undefined) {
+    this.stopProcess('path is required');
+  }
+
+  this.botName = process.argv[4];
+  this.path = process.argv[5];
+};
+
+Sdk.prototype.extractOptionsDuplicateBot = function() {
+  if(process.argv[4] === undefined) {
+    this.stopProcess('bot_name_src and bot_name_dst is required');
+  }
+
+  if(process.argv[5] === undefined) {
+    this.stopProcess('bot_name_dst is required');
+  }
+
+  this.botNameSrc = process.argv[4];
+  this.botNameDst = process.argv[5];
+  this.botFolderDst = process.argv[5] || this.botName;
+};
+
+Sdk.prototype.extractOptionsDeleteBot = function() {
+  if(process.argv[4] === undefined) {
+    this.stopProcess('bot_name is required');
+  }
+
+  this.botName = process.argv[4];
+};
+
+Sdk.prototype.extractOptionsDeleteFolder = function() {
+  if(process.argv[4] === undefined) {
+    this.stopProcess('bot_folder is required');
+  }
+
+  this.folderToDelete = process.argv[4];
 };
 
 Sdk.prototype.loadInstalledBots = function() {
@@ -165,52 +239,57 @@ Sdk.prototype.loadInstalledBots = function() {
   }
 };
 
-Sdk.prototype.checkArguments = function() {
-  var stats;
-
-  if(this.action === 'create') {
-    if(this.isBotNameExist(this.botName) === true) {
-      this.stopProcess('bot name already exist');
-    }
-
-    if(this.isBotFolderExist(this.botFolderDst) === true) {
-      this.stopProcess('bot folder already exist');
-    }
+Sdk.prototype.checkCommand = function() {
+  var method = 'checkCommand' + this.action.ucfirst() + this.type.ucfirst();
+  if(this[method]) {
+    this[method]();
   }
-  else if(this.action === 'export' && this.isBotNameExist(this.botName) === false) {
-    this.stopProcess('bot not found');
+};
+
+Sdk.prototype.checkCommandCreateBot = function() {
+  if(this.isBotNameExist(this.botName) === true) {
+    this.stopProcess('bot_name already exist');
   }
 
-  if(this.path !== null) {
-    try {
-      stats = require('fs').lstatSync(this.path);
-      if (stats.isDirectory() === false) {
-        this.stopProcess('path not a directory');
-      }
-    }
-    catch (e) {
-      this.stopProcess('path not found');
-    }
+  if(this.isBotFolderExist(this.botFolderDst) === true) {
+    this.stopProcess('bot_folder already exist');
+  }
+};
+
+Sdk.prototype.checkCommandCreateJob = function() {
+  if(this.isBotNameExist(this.botName) === false) {
+    this.stopProcess('bot_name not found');
   }
 
-  if(this.botNameSrc !== null) {
-    if(this.isBotNameExist(this.botNameSrc) === false) {
-      this.stopProcess('bot not found');
-    }
+  if(this.isJobExist(this.jobName) === true) {
+    this.stopProcess('job already exist');
+  }
+};
+
+Sdk.prototype.checkCommandCreateModel = function() {
+  if(this.isBotNameExist(this.botName) === false) {
+    this.stopProcess('bot_name not found');
   }
 
-  if(this.botNameDst !== null) {
-    if(this.isBotNameExist(this.botNameDst) === true) {
-      this.hasToConfirmEraseBotNameDst = true;
-    }
-    
-    if(this.isBotFolderExist(this.botFolderDst) === true) {
-      this.hasToConfirmEraseBotFolderDst = true;
-    }
-    
-    if(this.botNameSrc === this.botFolderDst) {
-      this.stopProcess('you can\'t duplicate same bot');
-    }
+  if(this.isModelExist(this.modelName) === true) {
+    this.stopProcess('model already exist');
+  }
+};
+
+Sdk.prototype.checkCommandExportBot = function() {
+  // todo
+  this.stopProcess('todo');
+};
+
+Sdk.prototype.checkCommandDuplicateBot = function() {
+  // todo
+  this.stopProcess('todo');
+};
+
+Sdk.prototype.checkCommandDeleteBot = function() {
+  this.folderToDelete = this.getBotFolder(this.botName);
+  if(this.folderToDelete === false) {
+    this.stopProcess('bot folder not found');
   }
 };
 
@@ -240,31 +319,44 @@ Sdk.prototype.isBotFolderExist = function(botFolder) {
   return false;
 };
 
-Sdk.prototype.launch = function () {
-  if(this.action === 'create') {
-    this.launchCreate();
-  }
-  else if(this.action === 'duplicate') {
-    if(this.hasToConfirmEraseBotNameDst === true) {
-      this.askConfirmEraseBotNameDst();
-    }
-    else if(this.hasToConfirmEraseBotFolderDst === true) {
-      this.askConfirmEraseBotFolderDst();
-    }
-    else {
-      this.launchDuplicate();
+Sdk.prototype.getBotFolder = function(botName) {
+  var idx = 0;
+  var countBots = this.botsInstalledJson.length;
+
+  for(; idx < countBots; idx++) {
+    if(this.botsInstalledJson[idx].bot_name == botName) {
+      return this.botsInstalledJson[idx].bot_folder;
     }
   }
-  else if(this.action === 'export') {
-    this.launchExport();
+
+  return false;
+};
+
+Sdk.prototype.isJobExist = function(jobName) {
+  var botFolder = this.getBotFolder(this.botName);
+  this.jobFile = require('path').join(this.rootFolder, 'jobs', botFolder, jobName + '.js');
+
+  return this.isFileExists(this.jobFile) !== false;
+};
+
+Sdk.prototype.isModelExist = function(modelName) {
+  var botFolder = this.getBotFolder(this.botName);
+  this.modelFile = require('path').join(this.rootFolder, 'models', botFolder, modelName.ucfirst() + '.js');
+
+  return this.isFileExists(this.modelFile) !== false;
+};
+
+Sdk.prototype.execute = function () {
+  var method = 'execute' + this.action.ucfirst() + this.type.ucfirst();
+  if(this[method]) {
+    this[method]();
+  }
+  else {
+    this.stopProcess(method + ' is not implement');
   }
 };
 
-Sdk.prototype.launchCreate = function () {
-  this.askInformationsForCreateBot();
-};
-
-Sdk.prototype.askInformationsForCreateBot = function() {
+Sdk.prototype.executeCreateBot = function() {
   var that = this;
   var questions = [
     {q:'api hostname: ', a:'', validators:{required:true}},
@@ -298,7 +390,7 @@ Sdk.prototype.askInformationsForCreateBot = function() {
     }
     else {
       releaseReadline();
-      that.createBot(questions);
+      that.createBotFiles(questions);
     }
   }
 
@@ -319,7 +411,112 @@ Sdk.prototype.askInformationsForCreateBot = function() {
   ask();
 };
 
-Sdk.prototype.createBot = function(parameters){
+Sdk.prototype.executeCreateJob = function() {
+  var jobNameUcfirst = this.jobName.ucfirst();
+  var botNameUcfirst = this.botName.ucfirst();
+  var fileContent = `/*
+ ${this.jobName}
+
+ Usage:
+   node job <bot_name> ${this.jobName} (-a | --app) <app_name> (-u | --user) <user_name>
+
+ API endpoint used:
+   GET /
+
+ Scope:
+   xxx
+*/
+/**
+ * @param {${botNameUcfirst}} bot
+ * @param {string[]} extraArguments
+ * @param {Job~Callback} callback
+ */
+module.exports = function(bot, extraArguments, callback) {
+  bot.${this.jobName}(function (error, data) {
+    if(error) {
+      if(callback) {
+        callback(error, null);
+      }
+      return;
+    }
+
+    if(callback) {
+      callback(null, data);
+    }
+  });
+};`;
+
+  require('fs').writeFileSync(this.jobFile, fileContent);
+};
+
+Sdk.prototype.executeCreateModel = function() {
+  var modelNameUcfirst = this.modelName.ucfirst();
+  var fileContent = `/**
+ * ${modelNameUcfirst} Model
+ * @class ${modelNameUcfirst}
+ * @param {${modelNameUcfirst}~Json} ${this.modelName} json of the ${this.modelName}
+ * @constructor
+ */
+function ${modelNameUcfirst}(${this.modelName}) {
+  this.${this.modelName} = ${this.modelName};
+}
+
+/**
+ * @return {${modelNameUcfirst}~Json|*}
+ */
+${modelNameUcfirst}.prototype.getJson = function() {
+  return this.${this.modelName};
+};
+
+/**
+ * @return {string}
+ */
+${modelNameUcfirst}.prototype.getId = function() {
+  return this.${this.modelName}.id;
+};
+
+module.exports = ${modelNameUcfirst};
+
+/**
+ * ${modelNameUcfirst} Json
+ * @typedef {Object} ${modelNameUcfirst}~Json
+ * @property {string} id
+ */`;
+
+  require('fs').writeFileSync(this.modelFile, fileContent);
+};
+
+Sdk.prototype.executeExportBot = function() {
+  //
+};
+
+Sdk.prototype.executeDuplicateBot = function() {
+  if(this.hasToConfirmEraseBotNameDst === true) {
+    this.askConfirmEraseBotNameDst();
+  }
+  else if(this.hasToConfirmEraseBotFolderDst === true) {
+    this.askConfirmEraseBotFolderDst();
+  }
+  else {
+    this.launchDuplicate();
+  }
+};
+
+Sdk.prototype.executeDeleteBot = function() {
+  this.executeDeleteFolder();
+  this.deleteBotInInstalledJson(this.botName);
+};
+
+Sdk.prototype.executeDeleteFolder = function() {
+  var idx = 0;
+  var maxFolders = this.foldersToCreate.length;
+
+  for(; idx < maxFolders; idx++){
+    this.deleteFolderRecursive(require('path').join(this.rootFolder, this.foldersToCreate[idx], this.folderToDelete));
+  }
+};
+
+Sdk.prototype.createBotFiles = function(parameters){
   var idx = 0;
   var countFolders = this.foldersToCreate.length;
   var pathToCreate;
@@ -577,7 +774,27 @@ ${ats}module.exports = ${this.botClassName};
 };
 
 Sdk.prototype.saveNewBotInInstalledJson = function(){
-  console.log('saveNewBotInInstalledJson');
+  this.botsInstalledJson.push({
+    bot_name: this.botName,
+    bot_folder: this.botFolderDst,
+    configurations: {},
+  });
+
+  require('fs').writeFileSync(this.botsInstalledFile, JSON.stringify(this.botsInstalledJson));
+};
+
+Sdk.prototype.deleteBotInInstalledJson = function(botName){
+  var idx = 0;
+  var countBots = this.botsInstalledJson.length;
+  var tmp = [];
+
+  for(; idx < countBots; idx++) {
+    if(this.botsInstalledJson[idx].bot_name != botName) {
+      tmp.push(this.botsInstalledJson[idx]);
+    }
+  }
+  
+  require('fs').writeFileSync(this.botsInstalledFile, JSON.stringify(tmp));
 };
 
 Sdk.prototype.askConfirmEraseBotNameDst = function() {
@@ -660,10 +877,6 @@ Sdk.prototype.launchDuplicate = function () {
   this.end();
 };
 
-Sdk.prototype.launchExport = function () {
-  // take all folder and format and copy to destination
-};
-
 Sdk.prototype.saveDuplicateBotInInstalledJson = function() {
   var idx = 0;
   var countBots = this.botsInstalledJson.length;
@@ -711,6 +924,48 @@ Sdk.prototype.createFolder = function (dst) {
   }
 };
 
+Sdk.prototype.end = function() {
+  this.logInfo('Done');
+};
+
+Sdk.prototype.logInfo = function(string) {
+  require('npmlog').info('SDK', string);
+};
+
+Sdk.prototype.stopProcess = function(exception) {
+  require('npmlog').error('SDK', exception);
+  process.exit(-1);
+};
+
+Sdk.prototype.isFileExists = function(path) {
+  try {
+    return require('fs').lstatSync(path);
+  }
+  catch(e){
+    return false;
+  }
+};
+
+Sdk.prototype.deleteFolderRecursive = function(path) {
+  var that = this;
+  var files = [];
+  var currentPath;
+
+  if(that.isFileExists(path)) {
+    files = require('fs').readdirSync(path);
+    files.forEach(function(file){
+      currentPath = path + "/" + file;
+      if(that.isFileExists(currentPath).isDirectory()) {
+        that.deleteFolderRecursive(currentPath);
+      }
+      else {
+        require('fs').unlinkSync(currentPath);
+      }
+    });
+    require('fs').rmdirSync(path);
+  }
+};
+
 Sdk.prototype.copyFilesRecursive = function(srcPath, destPath, depth) {
   var that = this;
   var files = [];
@@ -752,23 +1007,6 @@ Sdk.prototype.copyFilesRecursive = function(srcPath, destPath, depth) {
 Sdk.prototype.copyFile = function(src, dst) {
   var fileContent = require('fs').readFileSync(src, 'utf8');
   require('fs').writeFileSync(dst , fileContent);
-};
-
-Sdk.prototype.isFileExists = function(path) {
-  try {
-    return require('fs').lstatSync(path);
-  }
-  catch(e){
-    return false;
-  }
-};
-
-Sdk.prototype.end = function() {
-  this.logInfo('Done');
-};
-
-Sdk.prototype.logInfo = function(string) {
-  require('npmlog').info('SDK', string);
 };
 
 new Sdk();
