@@ -60,8 +60,6 @@ function Sdk() {
   this.botNameSrc = null;
   this.botNameDst = null;
   this.botFolderDst = null;
-  this.hasToConfirmEraseBotNameDst = false;
-  this.hasToConfirmEraseBotFolderDst = false;
   this.folderToDelete = null;
   this.jobName = null;
   this.modelName = null;
@@ -277,8 +275,17 @@ Sdk.prototype.checkCommandCreateModel = function() {
 };
 
 Sdk.prototype.checkCommandExportBot = function() {
-  // todo
-  this.stopProcess('todo');
+  if(this.isBotNameExist(this.botName) === false) {
+    this.stopProcess('bot not found');
+  }
+
+  var stats = this.isFileExists(this.path);
+  if(stats === false) {
+    this.stopProcess('path not accessible');
+  }
+  if(stats.isDirectory() === false) {
+    this.stopProcess('path is not a directory');
+  }
 };
 
 Sdk.prototype.checkCommandDuplicateBot = function() {
@@ -500,7 +507,29 @@ module.exports = ${modelNameUcfirst};
 };
 
 Sdk.prototype.executeExportBot = function() {
-  //
+  var botFolder = this.getBotFolder(this.botName);
+  var srcInstallJson = require('path').join(this.rootFolder, 'installs', this.botName.toLowerCase() + '.json');
+  var dstInstallJson = require('path').join(this.path, 'install.json');
+  var folders = ['applications','docs','jobs','models','test'];
+  var idx = 0;
+  var countFolders = folders.length;
+  var pathToCreate;
+  var pathToCopy;
+  var pathToPaste;
+  
+  this.copyFile(srcInstallJson, dstInstallJson);
+
+  for(; idx < countFolders; idx++) {
+    pathToCreate = require('path').join(this.path, folders[idx]);
+    this.createFolder(pathToCreate);
+
+    pathToCopy = require('path').join(this.rootFolder, folders[idx], botFolder);
+    pathToPaste = require('path').join(this.path, folders[idx]);
+    if(folders[idx] === 'test') {
+      pathToCopy = require('path').join(this.rootFolder, folders[idx], 'bots', botFolder);
+    }
+    this.copyFilesRecursive(pathToCopy, pathToPaste);
+  }
 };
 
 Sdk.prototype.executeDuplicateBot = function() {
@@ -861,7 +890,10 @@ Sdk.prototype.saveDuplicateBotInInstalledJson = function() {
 
 Sdk.prototype.createFolder = function (dst) {
   try {
-    require('fs').mkdirSync(dst);
+    var stats = this.isFileExists(dst);
+    if(stats === false || stats.isDirectory() === false) {
+      require('fs').mkdirSync(dst);
+    }
   }
   catch(e) {
     this.stopProcess(e.toString());
