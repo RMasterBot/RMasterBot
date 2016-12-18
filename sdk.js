@@ -210,7 +210,7 @@ Sdk.prototype.extractOptionsDuplicateBot = function() {
 
   this.botNameSrc = process.argv[4];
   this.botNameDst = process.argv[5];
-  this.botFolderDst = process.argv[5] || this.botName;
+  this.botFolderDst = process.argv[6] || this.botNameDst;
 };
 
 Sdk.prototype.extractOptionsDeleteBot = function() {
@@ -282,8 +282,21 @@ Sdk.prototype.checkCommandExportBot = function() {
 };
 
 Sdk.prototype.checkCommandDuplicateBot = function() {
-  // todo
-  this.stopProcess('todo');
+  if(this.isBotNameExist(this.botNameSrc) === false) {
+    this.stopProcess('bot source not found');
+  }
+
+  if(this.isBotNameExist(this.botNameDst) === true) {
+    this.stopProcess('bot name destination already exist');
+  }
+
+  if(this.isBotFolderExist(this.botFolderDst) === true) {
+    this.stopProcess('bot folder destination already exist');
+  }
+
+  if(this.botNameSrc === this.botFolderDst) {
+    this.stopProcess('you can\'t duplicate same bot');
+  }
 };
 
 Sdk.prototype.checkCommandDeleteBot = function() {
@@ -491,20 +504,35 @@ Sdk.prototype.executeExportBot = function() {
 };
 
 Sdk.prototype.executeDuplicateBot = function() {
-  if(this.hasToConfirmEraseBotNameDst === true) {
-    this.askConfirmEraseBotNameDst();
+  var idx = 0;
+  var countFolders = this.foldersToCreate.length;
+  var src;
+  var dst;
+
+  for(; idx < countFolders; idx++) {
+    src = require('path').join(this.rootFolder, this.foldersToCreate[idx], this.botNameSrc);
+    dst = require('path').join(this.rootFolder, this.foldersToCreate[idx], this.botNameDst);
+    this.createFolder(dst);
+    this.copyFilesRecursive(src, dst);
   }
-  else if(this.hasToConfirmEraseBotFolderDst === true) {
-    this.askConfirmEraseBotFolderDst();
-  }
-  else {
-    this.launchDuplicate();
-  }
+
+  src = require('path').join(this.rootFolder, 'installs', this.botNameSrc.toLowerCase() + '.json');
+  dst = require('path').join(this.rootFolder, 'installs', this.botNameDst.toLowerCase() + '.json');
+  var fileContent = JSON.parse(require('fs').readFileSync(src, 'utf8'));
+  fileContent.bot_name = this.botNameDst;
+  fileContent.bot_folder = this.botFolderDst;
+  require('fs').writeFileSync(dst , JSON.stringify(fileContent));
+
+  this.saveDuplicateBotInInstalledJson();
+
+  this.end();
 };
 
 Sdk.prototype.executeDeleteBot = function() {
   this.executeDeleteFolder();
   this.deleteBotInInstalledJson(this.botName);
+
+  require('fs').unlinkSync(require('path').join(this.rootFolder, 'installs', this.botName.toLowerCase() + '.json'));
 };
 
 Sdk.prototype.executeDeleteFolder = function() {
@@ -527,6 +555,7 @@ Sdk.prototype.createBotFiles = function(parameters){
   }
 
   require('fs').writeFileSync(require('path').join(this.rootFolder, 'applications', this.botFolderDst.toLowerCase(), 'main.js'), this.completeMainFile(parameters));
+  require('fs').writeFileSync(require('path').join(this.rootFolder, 'installs', this.botName.toLowerCase() + '.json'), this.completeInstallFile(parameters));
 
   this.saveNewBotInInstalledJson();
 
@@ -773,11 +802,21 @@ ${ats}module.exports = ${this.botClassName};
 `;
 };
 
+Sdk.prototype.completeInstallFile = function(parameters) {
+  return JSON.stringify({
+    bot_name : this.botName,
+    bot_folder : this.botFolderDst,
+    configuration : {
+      name:"string"
+    }
+  });
+};
+
 Sdk.prototype.saveNewBotInInstalledJson = function(){
   this.botsInstalledJson.push({
     bot_name: this.botName,
     bot_folder: this.botFolderDst,
-    configurations: {},
+    configurations: [],
   });
 
   require('fs').writeFileSync(this.botsInstalledFile, JSON.stringify(this.botsInstalledJson));
@@ -797,122 +836,27 @@ Sdk.prototype.deleteBotInInstalledJson = function(botName){
   require('fs').writeFileSync(this.botsInstalledFile, JSON.stringify(tmp));
 };
 
-Sdk.prototype.askConfirmEraseBotNameDst = function() {
-  var that = this;
-  var rl = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-
-  rl.clearLine(process.stdout, 0);
-
-  console.log('Bot Name destination already exist');
-  function ask() {
-    rl.question('Do you do erase it? (yes/no/quit) ', function (answer) {
-      answer = answer.toLowerCase();
-      if(answer == 'yes' || answer == 'y') {
-        if(that.hasToConfirmEraseBotFolderDst === true) {
-          that.askConfirmEraseBotFolderDst();
-        }
-        else {
-          that.launchDuplicate();
-        }
-        return;
-      }
-
-      if(answer == 'no' || answer == 'n' || answer == 'quit' || answer == 'q') {
-        that.stopProcess('Stop by user');
-      }
-    });
-  }
-  ask();
-};
-
-Sdk.prototype.askConfirmEraseBotFolderDst = function() {
-  var that = this;
-  var rl = require('readline').createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-
-  rl.clearLine(process.stdout, 0);
-
-  console.log('Bot Folder destination already exist');
-  function ask() {
-    rl.question('Do you do erase it? (yes/no/quit) ', function (answer) {
-      answer = answer.toLowerCase();
-      if(answer == 'yes' || answer == 'y') {
-        that.launchDuplicate();
-        return;
-      }
-
-      if(answer == 'no' || answer == 'n' || answer == 'quit' || answer == 'q') {
-        that.stopProcess('Stop by user');
-      }
-    });
-  }
-  ask();
-};
-
-Sdk.prototype.launchDuplicate = function () {
-  var idx = 0;
-  var countFolders = this.foldersToCreate.length;
-  var src;
-  var dst;
-
-  for(; idx < countFolders; idx++) {
-    src = require('path').join(this.rootFolder, this.foldersToCreate[idx], this.botNameSrc);
-    dst = require('path').join(this.rootFolder, this.foldersToCreate[idx], this.botNameDst);
-    this.createFolder(dst);
-    this.copyFilesRecursive(src, dst);
-  }
-
-  src = require('path').join(this.rootFolder, 'installs', this.botNameSrc + '.json');
-  dst = require('path').join(this.rootFolder, 'installs', this.botNameDst + '.json');
-
-  this.copyFile(src, dst);
-
-  this.saveDuplicateBotInInstalledJson();
-
-  this.end();
-};
-
 Sdk.prototype.saveDuplicateBotInInstalledJson = function() {
   var idx = 0;
   var countBots = this.botsInstalledJson.length;
   var bot = {};
   
-  if(this.hasToConfirmEraseBotNameDst === true && this.hasToConfirmEraseBotFolderDst === false) {
-    for(; idx < countBots; idx++) {
-      if(this.botsInstalledJson[idx].bot_name == this.botNameDst) {
-        this.botsInstalledJson[idx].bot_folder = this.botFolderDst;
-      }
-    }
-  }
-  else if(this.hasToConfirmEraseBotNameDst === false && this.hasToConfirmEraseBotFolderDst === true) {
-    for(; idx < countBots; idx++) {
-      if(this.botsInstalledJson[idx].bot_folder == this.botFolderDst) {
-        this.botsInstalledJson[idx].bot_name = this.botNameDst;
-      }
-    }
-  }
-  else if(this.hasToConfirmEraseBotNameDst === false && this.hasToConfirmEraseBotFolderDst === false) {
-    bot.bot_name = this.botNameDst;
-    bot.bot_folder = this.botFolderDst;
+  bot.bot_name = this.botNameDst;
+  bot.bot_folder = this.botFolderDst;
+  bot.configurations = [];
 
-    for(; idx < countBots; idx++) {
-      if(this.botsInstalledJson[idx].bot_name == this.botNameDst) {
-        bot.configurations = this.botsInstalledJson[idx].configurations;
-        if(this.botsInstalledJson[idx].packages) {
-          bot.packages = this.botsInstalledJson[idx].packages;
-        }
+  for(; idx < countBots; idx++) {
+    if(this.botsInstalledJson[idx].bot_name == this.botNameDst) {
+      bot.configurations = this.botsInstalledJson[idx].configurations;
+      if(this.botsInstalledJson[idx].packages) {
+        bot.packages = this.botsInstalledJson[idx].packages;
       }
     }
-
-    this.botsInstalledJson.push(bot);
   }
+
+  this.botsInstalledJson.push(bot);
   
-  require('fs').writeFileSync(this.botsInstalledFile , this.botsInstalledJson);
+  require('fs').writeFileSync(this.botsInstalledFile , JSON.stringify(this.botsInstalledJson));
 };
 
 Sdk.prototype.createFolder = function (dst) {
