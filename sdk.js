@@ -1,3 +1,5 @@
+require('colors');
+
 String.prototype.ucfirst = function() {
   return this.charAt(0).toUpperCase() + this.slice(1);
 };
@@ -42,6 +44,12 @@ function validate(value, validators) {
       }
       if(validators.format[idx] === 'uppercase') {
         value = value.toUpperCase();
+      }
+      if(validators.format[idx] === 'valid http url') {
+        var info = require('url').parse(value);
+        if(!info.hostname) {
+          return false;
+        }
       }
     }
   }
@@ -379,14 +387,23 @@ Sdk.prototype.execute = function () {
 Sdk.prototype.executeCreateBot = function() {
   var that = this;
   var questions = [
-    {q:'api hostname: ', a:'', validators:{required:true}},
-    {q:'http OR https: (https) ', a:'', validators:{values:['http','https'],default:'https'}},
-    {q:'api prefix: ', a:'', validators:{}},
-    {q:'http methods (comma separated): ', a:'', validators:{format:['comma separated','uppercase']}},
-    {q:'scopes (comma separated): ', a:'', validators:{format:['comma separated']}},
-    {q:'max request: ', a:'', validators:{}},
-    {q:'window time for request in minuts: ', a:'', validators:{}},
-    {q:'use ats (yes/no) : ', a:'', validators:{values:['yes','no']}}
+    {n:0, log:'===== Wizard ====='},
+    {n:1, log:'colors rules: ' + 'required'.red + ' / ' + 'optional'.cyan + ' / ' + 'default value'.yellow},
+    {n:2, pass:true},
+    {n:3, log:'--- API URL ---'},
+      {n:4, q:'base url (https://example.com): '.red, a:'', validators:{required:true, format:['valid http url']}},
+      {n:5, q:'prefix (api version): '.cyan, a:'', validators:{}},
+    {n:6, pass:true},
+    {n:7, log:'--- RATE LIMITS ---'},
+      {n:8, q:'max request: '.cyan, a:'', validators:{}},
+      {n:9, q:'window time for request in minuts: '.cyan, a:'', validators:{}},
+    {n:10, pass:true},
+    {n:11, log:'--- ATS ---'},
+      {n:12, q:'use ats (yes/no): '.red, a:'', validators:{values:['yes','no']}, jumpno:13},
+      {n:13, q:'scopes (comma separated): '.cyan, a:'', validators:{format:['comma separated']}},
+    {n:14, log:'--- CONFIGURATION ---'},
+      {n:15, q:'use configuration (yes/no): '.red, a:'', validators:{values:['yes','no']}, jumpno:16},
+      {n:16, q:'key:value (comma separated): '.cyan, a:'', validators:{format:['comma separated']}}
   ];
   var countQuestions = questions.length;
   var idx = 0;
@@ -415,17 +432,34 @@ Sdk.prototype.executeCreateBot = function() {
   }
 
   function ask() {
-    rl.question(questions[idx].q, function (answer) {
-      answer = validate(answer ,questions[idx].validators);
-      if(answer === false) {
-        console.log('Incorrect value');
-        ask();
-      }
-      else {
-        questions[idx].a = answer;
-        next();
-      }
-    });
+    if(questions[idx].pass) {
+      console.log('');
+      next();
+    }
+    else if(questions[idx].jump) {
+      idx = questions[idx].jump;
+      next();
+    }
+    else if(questions[idx].log) {
+      that.logInfo(questions[idx].log);
+      next();
+    }
+    else {
+      rl.question(questions[idx].q, function (answer) {
+        answer = validate(answer, questions[idx].validators);
+        if (answer === false) {
+          console.log('Incorrect value'.red);
+          ask();
+        }
+        else {
+          questions[idx].a = answer;
+          if(questions[idx].a == 'no' && questions[idx].jumpno) {
+            idx = questions[idx].jumpno;
+          }
+          next();
+        }
+      });
+    }
   }
 
   ask();
@@ -592,39 +626,49 @@ Sdk.prototype.createBotFiles = function(parameters){
 };
 
 Sdk.prototype.completeMainFile = function(parameters) {
+  var info = require('url').parse(parameters[4].a);
   var httpModule = '';
-  if(parameters[1].a.length > 0) {
-    httpModule = "\n"+`  this.defaultValues.httpModule = '${parameters[1].a}';`;
-  }
-
   var pathPrefix = '';
-  if(parameters[2].a.length > 0) {
-    pathPrefix = "\n"+`  this.defaultValues.pathPrefix = '${parameters[2].a}';`;
-  }
-
-  var methods = '';
-  if(parameters[3].a.length > 0) {
-    methods = "\n"+`  this.validHttpMethods = [${parameters[3].a}];` + "\n";
-  }
-
   var port = '';
-  /*if(parameters[4].a.length > 0) {
-    port = `this.defaultValues.port = ${parameters[3].a};`;
-  }*/
-
   var scopes = '';
-  if(parameters[4].a.length > 0) {
-    scopes = "\n"+`  this.defaultValues.scopes = ${parameters[4].a};`;
-  }
-
   var remainingRequest = '';
-  if(parameters[5].a.length > 0) {
-    remainingRequest = "\n"+`  this.defaultValues.defaultRemainingRequest = ${parameters[5].a};`;
+  var remainingTime = '';
+
+  if(info.protocol == 'https:') {
+    httpModule = "\n"+`  this.defaultValues.httpModule = 'https';`;
+    port = "\n"+`  this.defaultValues.port = 443;`;
+    if(info.port) {
+      port = "\n"+`  this.defaultValues.port = ${info.port};`;
+    }
+  }
+  else if(info.protocol == 'http:') {
+    httpModule = "\n"+`  this.defaultValues.httpModule = 'http';`;
+    port = "\n"+`  this.defaultValues.port = 80;`;
+    if(info.port) {
+      port = "\n"+`  this.defaultValues.port = ${info.port};`;
+    }
+  }
+  else {
+    httpModule = "\n"+`  this.defaultValues.httpModule = '${info.protocol.replace(':','')}';`;
+    if(info.port) {
+      port = "\n"+`  this.defaultValues.port = ${info.port};`;
+    }
   }
 
-  var remainingTime = '';
-  if(parameters[6].a.length > 0) {
-    remainingTime = "\n"+`  this.defaultValues.defaultRemainingTime = 60*${parameters[6].a};`;
+  if(parameters[5].a.length > 0) {
+    pathPrefix = "\n"+`  this.defaultValues.pathPrefix = '${parameters[5].a}';`;
+  }
+
+  if(parameters[13].a.length > 0) {
+    scopes = "\n"+`  this.defaultValues.scopes = ${parameters[13].a};`;
+  }
+
+  if(parameters[8].a.length > 0) {
+    remainingRequest = "\n"+`  this.defaultValues.defaultRemainingRequest = ${parameters[8].a};`;
+  }
+
+  if(parameters[9].a.length > 0) {
+    remainingTime = "\n"+`  this.defaultValues.defaultRemainingTime = 60*${parameters[9].a};`;
   }
 
   var ats = `
@@ -762,7 +806,7 @@ ${this.botClassName}.prototype.getUserForNewAccessToken = function(formatAccessT
   */
 };` + "\n\n";
 
-  if(parameters[7].a === 'no') {
+  if(parameters[12].a === 'no') {
     ats = '';
   }
 
@@ -779,8 +823,8 @@ ${this.botClassName}.prototype.getUserForNewAccessToken = function(formatAccessT
  */
 function ${this.botClassName}(name, folder, allConfigurations){
   Bot.call(this, name, folder, allConfigurations);
-  ${methods}
-  this.defaultValues.hostname = '${parameters[0].a}';
+
+  this.defaultValues.hostname = '${info.hostname}';
   ${httpModule}${pathPrefix}${port}${scopes}
   ${remainingRequest}${remainingTime}
 }
