@@ -435,10 +435,12 @@ Request.prototype.extractParameterFilesForRequest = function (parameters) {
             }
           }
           else {
+            //noinspection ExceptionCaughtLocallyJS
             throw MyError("REQ-008", "directory given but not enable: %s", tmpFiles[key]);
           }
         }
         else {
+          //noinspection ExceptionCaughtLocallyJS
           throw MyError("REQ-009", "not a file and not a directory: %s", tmpFiles[key]);
         }
       }
@@ -446,6 +448,7 @@ Request.prototype.extractParameterFilesForRequest = function (parameters) {
   }
   catch(e){
     if(e.code === 'ENOENT') {
+      //noinspection JSUnusedAssignment
       throw MyError("REQ-010", "file not found: %s", tmpFiles[key]);
     }
     else if(e.code === 'REQ-008' || e.code === 'REQ-009') {
@@ -527,6 +530,7 @@ Request.prototype.transformParameterGet = function(values) {
  */
 function MyError(){
   var _RError = require(__dirname + '/rerror.js');
+  //noinspection JSUnresolvedFunction
   var args = Array.prototype.slice.call(arguments);
   args.unshift(null);
   return new (Function.prototype.bind.apply(_RError, args));

@@ -227,7 +227,7 @@ Install.prototype.getOptions = function(){
     url = require('url').parse(this.botToInstall);
     host = url.hostname;
     path = url.path;
-    if(url.port !== null) {
+    if(url.port) {
       port = url.port;
     }
   }
@@ -261,7 +261,7 @@ Install.prototype.updateOptionsWithRedirectUrl = function(options, url){
   options.host = redirectUrl.hostname;
   options.path = redirectUrl.path;
 
-  if(redirectUrl.port !== null) {
+  if(redirectUrl.port) {
     options.port = null;
   }
   else if(redirectUrl.protocol === 'http:'){

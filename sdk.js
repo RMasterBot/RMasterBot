@@ -6,7 +6,7 @@ String.prototype.ucfirst = function() {
 
 function trimAndProtect(item) {
   item = item.trim();
-  item = item.replace(/\'/g,"\\'");
+  item = item.replace(/'/g,"\\'");
 
   return item;
 }
@@ -114,9 +114,6 @@ Sdk.prototype.showHelp = function() {
 };
 
 Sdk.prototype.extractArguments = function(){
-  var idx = 3;
-  var argc = process.argv.length;
-
   if(process.argv.indexOf('-h') !== -1 || process.argv.indexOf('--help') !== -1) {
     this.showHelp();
   }
@@ -157,6 +154,7 @@ Sdk.prototype.extractOptionsArgument = function() {
   }
 };
 
+//noinspection JSUnusedGlobalSymbols
 Sdk.prototype.extractOptionsCreateBot = function() {
   if(process.argv[4] === undefined) {
     this.stopProcess('bot_name is required');
@@ -166,6 +164,7 @@ Sdk.prototype.extractOptionsCreateBot = function() {
   this.botFolderDst = process.argv[5] || this.botName;
 };
 
+//noinspection JSUnusedGlobalSymbols
 Sdk.prototype.extractOptionsCreateJob = function() {
   if(process.argv[4] === undefined) {
     this.stopProcess('bot_name is required');
@@ -179,6 +178,7 @@ Sdk.prototype.extractOptionsCreateJob = function() {
   this.jobName = process.argv[5];
 };
 
+//noinspection JSUnusedGlobalSymbols
 Sdk.prototype.extractOptionsCreateModel = function() {
   if(process.argv[4] === undefined) {
     this.stopProcess('bot_name is required');
@@ -192,6 +192,7 @@ Sdk.prototype.extractOptionsCreateModel = function() {
   this.modelName = process.argv[5];
 };
 
+//noinspection JSUnusedGlobalSymbols
 Sdk.prototype.extractOptionsExportBot = function() {
   if(process.argv[4] === undefined) {
     this.stopProcess('bot_name and path is required');
@@ -205,6 +206,7 @@ Sdk.prototype.extractOptionsExportBot = function() {
   this.path = process.argv[5];
 };
 
+//noinspection JSUnusedGlobalSymbols
 Sdk.prototype.extractOptionsDuplicateBot = function() {
   if(process.argv[4] === undefined) {
     this.stopProcess('bot_name_src and bot_name_dst is required');
@@ -219,6 +221,7 @@ Sdk.prototype.extractOptionsDuplicateBot = function() {
   this.botFolderDst = process.argv[6] || this.botNameDst;
 };
 
+//noinspection JSUnusedGlobalSymbols
 Sdk.prototype.extractOptionsDeleteBot = function() {
   if(process.argv[4] === undefined) {
     this.stopProcess('bot_name is required');
@@ -227,6 +230,7 @@ Sdk.prototype.extractOptionsDeleteBot = function() {
   this.botName = process.argv[4];
 };
 
+//noinspection JSUnusedGlobalSymbols
 Sdk.prototype.extractOptionsDeleteFolder = function() {
   if(process.argv[4] === undefined) {
     this.stopProcess('bot_folder is required');
@@ -252,6 +256,7 @@ Sdk.prototype.checkCommand = function() {
   }
 };
 
+//noinspection JSUnusedGlobalSymbols
 Sdk.prototype.checkCommandCreateBot = function() {
   if(this.isBotNameExist(this.botName) === true) {
     this.stopProcess('bot_name already exist');
@@ -262,6 +267,7 @@ Sdk.prototype.checkCommandCreateBot = function() {
   }
 };
 
+//noinspection JSUnusedGlobalSymbols
 Sdk.prototype.checkCommandCreateJob = function() {
   if(this.isBotNameExist(this.botName) === false) {
     this.stopProcess('bot_name not found');
@@ -272,6 +278,7 @@ Sdk.prototype.checkCommandCreateJob = function() {
   }
 };
 
+//noinspection JSUnusedGlobalSymbols
 Sdk.prototype.checkCommandCreateModel = function() {
   if(this.isBotNameExist(this.botName) === false) {
     this.stopProcess('bot_name not found');
@@ -282,6 +289,7 @@ Sdk.prototype.checkCommandCreateModel = function() {
   }
 };
 
+//noinspection JSUnusedGlobalSymbols
 Sdk.prototype.checkCommandExportBot = function() {
   if(this.isBotNameExist(this.botName) === false) {
     this.stopProcess('bot not found');
@@ -296,6 +304,7 @@ Sdk.prototype.checkCommandExportBot = function() {
   }
 };
 
+//noinspection JSUnusedGlobalSymbols
 Sdk.prototype.checkCommandDuplicateBot = function() {
   if(this.isBotNameExist(this.botNameSrc) === false) {
     this.stopProcess('bot source not found');
@@ -314,6 +323,7 @@ Sdk.prototype.checkCommandDuplicateBot = function() {
   }
 };
 
+//noinspection JSUnusedGlobalSymbols
 Sdk.prototype.checkCommandDeleteBot = function() {
   this.folderToDelete = this.getBotFolder(this.botName);
   if(this.folderToDelete === false) {
@@ -384,6 +394,7 @@ Sdk.prototype.execute = function () {
   }
 };
 
+//noinspection JSUnusedGlobalSymbols
 Sdk.prototype.executeCreateBot = function() {
   var that = this;
   var questions = [
@@ -465,6 +476,7 @@ Sdk.prototype.executeCreateBot = function() {
   ask();
 };
 
+//noinspection JSUnusedGlobalSymbols
 Sdk.prototype.executeCreateJob = function() {
   var jobNameUcfirst = this.jobName.ucfirst();
   var botNameUcfirst = this.botName.ucfirst();
@@ -503,6 +515,7 @@ module.exports = function(bot, extraArguments, callback) {
   require('fs').writeFileSync(this.jobFile, fileContent);
 };
 
+//noinspection JSUnusedGlobalSymbols
 Sdk.prototype.executeCreateModel = function() {
   var modelNameUcfirst = this.modelName.ucfirst();
   var fileContent = `/**
@@ -540,6 +553,7 @@ module.exports = ${modelNameUcfirst};
   require('fs').writeFileSync(this.modelFile, fileContent);
 };
 
+//noinspection JSUnusedGlobalSymbols
 Sdk.prototype.executeExportBot = function() {
   var botFolder = this.getBotFolder(this.botName);
   var srcInstallJson = require('path').join(this.rootFolder, 'installs', this.botName.toLowerCase() + '.json');
@@ -566,6 +580,7 @@ Sdk.prototype.executeExportBot = function() {
   }
 };
 
+//noinspection JSUnusedGlobalSymbols
 Sdk.prototype.executeDuplicateBot = function() {
   var idx = 0;
   var countFolders = this.foldersToCreate.length;
@@ -591,6 +606,7 @@ Sdk.prototype.executeDuplicateBot = function() {
   this.end();
 };
 
+//noinspection JSUnusedGlobalSymbols
 Sdk.prototype.executeDeleteBot = function() {
   this.executeDeleteFolder();
   this.deleteBotInInstalledJson(this.botName);
@@ -991,7 +1007,6 @@ Sdk.prototype.copyFilesRecursive = function(srcPath, destPath, depth) {
   var files = [];
   var newSrcPath;
   var newDestPath;
-  var fileContent;
 
   if(depth > this.maxDepthCopyFolder) {
     this.stopProcess('Depth copy folder exceded');

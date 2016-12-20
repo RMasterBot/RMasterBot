@@ -1,13 +1,15 @@
+require('colors');
+
 function Doc() {
-  require('colors');
   this.bot = null;
   this.arguments = [];
   this.botConfigured = null;
+  /** @type {Doc~ApiDocumentation} */
   this.api = {};
 
-  this.methods = ["checkout", "connect", "copy", "delete", "get", "head", "link", "lock", "m-search", "merge",
-    "mkactivity", "mkcalendar", "mkcol", "move", "notify", "options", "patch", "post", "propfind", "proppatch", "purge",
-    "put", "report", "search", "subscribe", "trace", "unlink", "unlock", "unsubscribe","view"];
+  this.methods = ['CHECKOUT', 'CONNECT', 'COPY', 'DELETE', 'GET', 'HEAD', 'LINK', 'LOCK', 'M-SEARCH', 'MERGE',
+    'MKACTIVITY', 'MKCALENDAR', 'MKCOL', 'MOVE', 'NOTIFY', 'OPTIONS', 'PATCH', 'POST', 'PROPFIND', 'PROPPATCH', 'PURGE',
+    'PUT', 'REPORT', 'SEARCH', 'SUBSCRIBE', 'TRACE', 'UNLINK', 'UNLOCK', 'UNSUBSCRIBE','VIEW'];
 
   this.extractArguments();
   this.loadBot();
@@ -61,8 +63,8 @@ Doc.prototype.showDoc = function() {
   var i;
 
   if(this.arguments.length < 1) {
-    for (i = 0; i < api.endpoints.length; i++) {
-      this.displayEndpoint(api.endpoints[i]);
+    for (i = 0; i < this.api.endpoints.length; i++) {
+      this.displayEndpoint(this.api.endpoints[i]);
     }
     return;
   }
@@ -70,30 +72,30 @@ Doc.prototype.showDoc = function() {
   var methodIndex = this.methods.indexOf(this.arguments[0]);
   if(methodIndex !== -1) {
     if(this.arguments.length < 2) {
-      for (i = 0; i < api.endpoints.length; i++) {
-        if(api.endpoints[i].method === this.methods[methodIndex]) {
-          this.displayEndpoint(api.endpoints[i]);
+      for (i = 0; i < this.api.endpoints.length; i++) {
+        if(this.api.endpoints[i].method === this.methods[methodIndex]) {
+          this.displayEndpoint(this.api.endpoints[i]);
         }
       }
     }
     else {
-      for (i = 0; i < api.endpoints.length; i++) {
-        if(api.endpoints[i].method === this.methods[methodIndex] && api.endpoints[i].url === this.arguments[1]) {
-          this.displayDetailsEndpoint(api.endpoints[i]);
+      for (i = 0; i < this.api.endpoints.length; i++) {
+        if(this.api.endpoints[i].method === this.methods[methodIndex] && this.api.endpoints[i].url === this.arguments[1]) {
+          this.displayDetailsEndpoint(this.api.endpoints[i]);
           return;
         }
       }
     }
   }
   else if(this.arguments[0] === 'parameters') {
-    for (i = 0; i < api.parameters.length; i++) {
-      this.displayParameters(api.parameters[i]);
+    for (i = 0; i < this.api.parameters.length; i++) {
+      this.displayParameters(this.api.parameters[i]);
     }
   }
   else {
-    for (i = 0; i < api.endpoints.length; i++) {
-      if(api.endpoints[i].url === this.arguments[0]) {
-        this.displayDetailsEndpoint(api.endpoints[i]);
+    for (i = 0; i < this.api.endpoints.length; i++) {
+      if(this.api.endpoints[i].url === this.arguments[0]) {
+        this.displayDetailsEndpoint(this.api.endpoints[i]);
         return;
       }
     }
@@ -102,10 +104,18 @@ Doc.prototype.showDoc = function() {
   }
 };
 
+/**
+ * Display Endpoint
+ * @param {Doc~Endpoints} endpoint
+ */
 Doc.prototype.displayEndpoint = function(endpoint) {
   console.log(endpoint.method.toUpperCase().green + ' ' + endpoint.url.magenta + ' ' + endpoint.description);
 };
 
+/**
+ * Display Endpoint Details
+ * @param {Doc~Endpoints} endpoint
+ */
 Doc.prototype.displayDetailsEndpoint = function(endpoint) {
   console.log(endpoint.method.toUpperCase().green + ' ' + endpoint.url.magenta + "\nScope: ".cyan + endpoint.scope + "\nDescription: ".cyan + endpoint.description);
 
@@ -113,6 +123,10 @@ Doc.prototype.displayDetailsEndpoint = function(endpoint) {
   this.displayParametersOptional(endpoint.parameters.optional);
 };
 
+/**
+ * Display required Parameters
+ * @param {string[]} parameters
+ */
 Doc.prototype.displayParametersRequired = function(parameters) {
   if(parameters.length === 0) {
     return;
@@ -120,19 +134,18 @@ Doc.prototype.displayParametersRequired = function(parameters) {
 
   console.log("\n"+'Parameters required:');
   for (var i = 0; i < parameters.length; i++) {
-    if(typeof parameters[i] === 'string') {
-      for (var j = 0; j < api.parameters.length; j++) {
-        if(parameters[i] === api.parameters[j].name) {
-          this.displayParameters(api.parameters[j]);
-        }
+    for (var j = 0; j < this.api.parameters.length; j++) {
+      if(parameters[i] === this.api.parameters[j].name) {
+        this.displayParameters(this.api.parameters[j]);
       }
-    }
-    else {
-      this.displayParameters(parameters[i]);
     }
   }
 };
 
+/**
+ * Display optional Parameters
+ * @param {string[]} parameters
+ */
 Doc.prototype.displayParametersOptional = function(parameters) {
   if(parameters.length === 0) {
     return;
@@ -140,19 +153,18 @@ Doc.prototype.displayParametersOptional = function(parameters) {
 
   console.log("\n"+'Parameters optional:');
   for (var i = 0; i < parameters.length; i++) {
-    if(typeof parameters[i] === 'string') {
-      for (var j = 0; j < api.parameters.length; j++) {
-        if(parameters[i] === api.parameters[j].name) {
-          this.displayParameters(api.parameters[j]);
-        }
+    for (var j = 0; j < this.api.parameters.length; j++) {
+      if(parameters[i] === this.api.parameters[j].name) {
+        this.displayParameters(this.api.parameters[j]);
       }
-    }
-    else {
-      this.displayParameters(parameters[i]);
     }
   }
 };
 
+/**
+ * Display Parameters
+ * @param {Doc~Parameters} params
+ */
 Doc.prototype.displayParameters = function(params) {
   console.log(params.name.yellow + ' (' + params.type + ') -> ' + params.description);
 };
@@ -163,3 +175,32 @@ Doc.prototype.stopProcess = function(exception) {
 };
 
 new Doc();
+
+/**
+ * Api Documentation
+ * @typedef {Object} Doc~ApiDocumentation
+ * @property {Doc~Endpoints[]} endpoints - List of Endpoints
+ * @property {Doc~Parameters[]} parameters - List of Parameters
+ */
+/**
+ * Endpoints
+ * @typedef {Object} Doc~Endpoints
+ * @property {string} method
+ * @property {string} url
+ * @property {string} description
+ * @property {string} scope
+ * @property {Doc~EndpointParameters} parameters
+ */
+/**
+ * Global Parameters
+ * @typedef {Object} Doc~Parameters
+ * @property {string} name
+ * @property {string} type
+ * @property {string} description
+ */
+/**
+ * Endpoint Parameters
+ * @typedef {Object} Doc~EndpointParameters
+ * @property {string[]} Doc~EndpointParameters.required
+ * @property {string[]} Doc~EndpointParameters.optional
+ */
