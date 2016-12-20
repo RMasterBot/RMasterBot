@@ -12,11 +12,10 @@ function trimAndProtect(item) {
 }
 
 function cleanStringForArray(value) {
-  value = value.replace(/''/g, '');
   value = value.replace(/,{2,}/g, ',');
   value = value.replace(/^,/g, '');
   value = value.replace(/,$/g, '');
-  
+
   return value;
 }
 
@@ -50,6 +49,10 @@ function validate(value, validators) {
         if(!info.hostname) {
           return false;
         }
+      }
+      if(validators.format[idx] === 'remove quote') {
+        value = value.replace(/\\'/g, '');
+        value = value.replace(/'/g, '');
       }
     }
   }
@@ -414,7 +417,7 @@ Sdk.prototype.executeCreateBot = function() {
       {n:13, q:'scopes (comma separated): '.cyan, a:'', validators:{format:['comma separated']}},
     {n:14, log:'--- CONFIGURATION ---'},
       {n:15, q:'use configuration (yes/no): '.red, a:'', validators:{values:['yes','no']}, jumpno:16},
-      {n:16, q:'key:value (comma separated): '.cyan, a:'', validators:{format:['comma separated']}}
+      {n:16, q:'key:type:value (comma separated): '.cyan, a:'', validators:{format:['comma separated','remove quote']}}
   ];
   var countQuestions = questions.length;
   var idx = 0;
@@ -447,10 +450,6 @@ Sdk.prototype.executeCreateBot = function() {
       console.log('');
       next();
     }
-    else if(questions[idx].jump) {
-      idx = questions[idx].jump;
-      next();
-    }
     else if(questions[idx].log) {
       that.logInfo(questions[idx].log);
       next();
@@ -478,7 +477,6 @@ Sdk.prototype.executeCreateBot = function() {
 
 //noinspection JSUnusedGlobalSymbols
 Sdk.prototype.executeCreateJob = function() {
-  var jobNameUcfirst = this.jobName.ucfirst();
   var botNameUcfirst = this.botName.ucfirst();
   var fileContent = `/*
  ${this.jobName}
@@ -633,12 +631,49 @@ Sdk.prototype.createBotFiles = function(parameters){
     this.createFolder(pathToCreate);
   }
 
+  this.generateConfiguration(parameters);
+
   require('fs').writeFileSync(require('path').join(this.rootFolder, 'applications', this.botFolderDst.toLowerCase(), 'main.js'), this.completeMainFile(parameters));
-  require('fs').writeFileSync(require('path').join(this.rootFolder, 'installs', this.botName.toLowerCase() + '.json'), this.completeInstallFile(parameters));
+  require('fs').writeFileSync(require('path').join(this.rootFolder, 'installs', this.botName.toLowerCase() + '.json'), this.completeInstallFile(parameters.configuration));
 
   this.saveNewBotInInstalledJson();
 
   this.end();
+};
+
+Sdk.prototype.generateConfiguration = function(parameters) {
+  var line;
+  var parts;
+  var subParts;
+  var idxParts = 0;
+  var lenParts;
+  var haveToNull = true;
+
+  parameters.install = {};
+  parameters.configuration = {};
+
+  if(parameters[15].a == 'no') {
+    return false;
+  }
+
+  line = cleanStringForArray(parameters[16].a);
+  parts = line.split(',');
+  lenParts = parts.length;
+  for(; idxParts < lenParts; idxParts++) {
+    subParts = parts[idxParts].split(':');
+    if(subParts.length > 1) {
+      haveToNull = false;
+      parameters.install[subParts[0]] = subParts[1];
+      parameters.configuration[subParts[0]] = (subParts.length > 2) ? subParts[2] : '';
+    }
+  }
+
+  if(haveToNull) {
+    parameters.install = null;
+    parameters.configuration = null;
+  }
+
+  return true;
 };
 
 Sdk.prototype.completeMainFile = function(parameters) {
@@ -892,21 +927,33 @@ ${ats}module.exports = ${this.botClassName};
 };
 
 Sdk.prototype.completeInstallFile = function(parameters) {
-  return JSON.stringify({
+  var install = {
     bot_name : this.botName,
     bot_folder : this.botFolderDst,
     configuration : {
       name:"string"
     }
-  });
+  };
+
+  if(parameters.install) {
+
+  }
+
+  return JSON.stringify(install);
 };
 
-Sdk.prototype.saveNewBotInInstalledJson = function(){
-  this.botsInstalledJson.push({
+Sdk.prototype.saveNewBotInInstalledJson = function(configuration){
+  var newBot = {
     bot_name: this.botName,
     bot_folder: this.botFolderDst,
     configurations: [],
-  });
+  };
+
+  if(configuration) {
+    newBot.configurations.push(configuration);
+  }
+
+  this.botsInstalledJson.push(newBot);
 
   require('fs').writeFileSync(this.botsInstalledFile, JSON.stringify(this.botsInstalledJson));
 };
