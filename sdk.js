@@ -11,7 +11,7 @@ function trimAndProtect(item) {
   return item;
 }
 
-function cleanStringForArray(value) {
+function cleanString(value) {
   value = value.replace(/,{2,}/g, ',');
   value = value.replace(/^,/g, '');
   value = value.replace(/,$/g, '');
@@ -38,8 +38,13 @@ function validate(value, validators) {
     for(; idx < count; idx++) {
       if(validators.format[idx] === 'comma separated') {
         value = value.trim();
+        value = value.split(',').map(trimAndProtect).join(',');
+        value = cleanString(value);
+      }
+      if(validators.format[idx] === 'comma separated for array') {
+        value = value.trim();
         value = "'" + (value.split(',').map(trimAndProtect).join("','")) + "'";
-        value = cleanStringForArray(value);
+        value = cleanString(value);
       }
       if(validators.format[idx] === 'uppercase') {
         value = value.toUpperCase();
@@ -419,7 +424,7 @@ Sdk.prototype.executeCreateBot = function() {
     {n:15, log:'--- CONFIGURATION ---'},
       {n:16, q:'use configuration (yes/no): '.red, a:'', validators:{values:['yes','no']}, jumpno:18},
       {n:17, q:'configuration name: '.red, a:'', validators:{required:true}},
-      {n:18, q:'key:type:value (comma separated): '.cyan, a:'', validators:{format:['comma separated','remove quote']}}
+      {n:18, q:'key:type:value (comma separated): '.cyan, a:'', validators:{format:['comma separated']}}
   ];
   var countQuestions = questions.length;
   var idx = 0;
@@ -670,7 +675,7 @@ Sdk.prototype.generateConfiguration = function(parameters) {
     return false;
   }
 
-  line = cleanStringForArray(parameters[18].a);
+  line = cleanString(parameters[18].a);
   parts = line.split(',');
   lenParts = parts.length;
   for(; idxParts < lenParts; idxParts++) {
@@ -725,7 +730,7 @@ Sdk.prototype.completeMainFile = function(parameters) {
   }
 
   if(parameters[13].a.length > 0) {
-    scopes = "\n"+`  this.defaultValues.scopes = [${parameters[13].a}];`;
+    scopes = "\n"+`  this.defaultValues.scopes = '${parameters[13].a}';`;
   }
 
   if(parameters[8].a.length > 0) {
