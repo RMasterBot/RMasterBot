@@ -415,9 +415,11 @@ Sdk.prototype.executeCreateBot = function() {
     {n:11, log:'--- ATS ---'},
       {n:12, q:'use ats (yes/no): '.red, a:'', validators:{values:['yes','no']}, jumpno:13},
       {n:13, q:'scopes (comma separated): '.cyan, a:'', validators:{format:['comma separated']}},
-    {n:14, log:'--- CONFIGURATION ---'},
-      {n:15, q:'use configuration (yes/no): '.red, a:'', validators:{values:['yes','no']}, jumpno:16},
-      {n:16, q:'key:type:value (comma separated): '.cyan, a:'', validators:{format:['comma separated','remove quote']}}
+    {n:14, pass:true},
+    {n:15, log:'--- CONFIGURATION ---'},
+      {n:16, q:'use configuration (yes/no): '.red, a:'', validators:{values:['yes','no']}, jumpno:18},
+      {n:17, q:'configuration name: '.red, a:'', validators:{required:true}},
+      {n:18, q:'key:type:value (comma separated): '.cyan, a:'', validators:{format:['comma separated','remove quote']}}
   ];
   var countQuestions = questions.length;
   var idx = 0;
@@ -511,6 +513,8 @@ module.exports = function(bot, extraArguments, callback) {
 };`;
 
   require('fs').writeFileSync(this.jobFile, fileContent);
+
+  this.end();
 };
 
 //noinspection JSUnusedGlobalSymbols
@@ -549,6 +553,8 @@ module.exports = ${modelNameUcfirst};
  */`;
 
   require('fs').writeFileSync(this.modelFile, fileContent);
+
+  this.end();
 };
 
 //noinspection JSUnusedGlobalSymbols
@@ -576,6 +582,8 @@ Sdk.prototype.executeExportBot = function() {
     }
     this.copyFilesRecursive(pathToCopy, pathToPaste);
   }
+
+  this.end();
 };
 
 //noinspection JSUnusedGlobalSymbols
@@ -610,6 +618,8 @@ Sdk.prototype.executeDeleteBot = function() {
   this.deleteBotInInstalledJson(this.botName);
 
   require('fs').unlinkSync(require('path').join(this.rootFolder, 'installs', this.botName.toLowerCase() + '.json'));
+
+  this.end();
 };
 
 Sdk.prototype.executeDeleteFolder = function() {
@@ -618,6 +628,10 @@ Sdk.prototype.executeDeleteFolder = function() {
 
   for(; idx < maxFolders; idx++){
     this.deleteFolderRecursive(require('path').join(this.rootFolder, this.foldersToCreate[idx], this.folderToDelete));
+  }
+
+  if(this.type == 'folder') {
+    this.end();
   }
 };
 
@@ -652,11 +666,11 @@ Sdk.prototype.generateConfiguration = function(parameters) {
   parameters.install = {};
   parameters.configuration = {};
 
-  if(parameters[15].a == 'no') {
+  if(parameters[16].a == 'no') {
     return false;
   }
 
-  line = cleanStringForArray(parameters[16].a);
+  line = cleanStringForArray(parameters[18].a);
   parts = line.split(',');
   lenParts = parts.length;
   for(; idxParts < lenParts; idxParts++) {
@@ -664,7 +678,7 @@ Sdk.prototype.generateConfiguration = function(parameters) {
     if(subParts.length > 1) {
       haveToNull = false;
       parameters.install[subParts[0]] = subParts[1];
-      parameters.configuration[subParts[0]] = (subParts.length > 2) ? subParts[2] : '';
+      parameters.configuration[subParts[0]] = (subParts.length > 2) ? subParts.splice(2).join(':') : '';
     }
   }
 
@@ -955,6 +969,7 @@ Sdk.prototype.saveNewBotInInstalledJson = function(parameters){
   };
 
   if(parameters.configuration) {
+    parameters.configuration.name = parameters[17].a;
     newBot.configurations.push(parameters.configuration);
   }
 
