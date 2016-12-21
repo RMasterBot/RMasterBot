@@ -634,9 +634,9 @@ Sdk.prototype.createBotFiles = function(parameters){
   this.generateConfiguration(parameters);
 
   require('fs').writeFileSync(require('path').join(this.rootFolder, 'applications', this.botFolderDst.toLowerCase(), 'main.js'), this.completeMainFile(parameters));
-  require('fs').writeFileSync(require('path').join(this.rootFolder, 'installs', this.botName.toLowerCase() + '.json'), this.completeInstallFile(parameters.configuration));
+  require('fs').writeFileSync(require('path').join(this.rootFolder, 'installs', this.botName.toLowerCase() + '.json'), this.completeInstallFile(parameters));
 
-  this.saveNewBotInInstalledJson();
+  this.saveNewBotInInstalledJson(parameters);
 
   this.end();
 };
@@ -711,7 +711,7 @@ Sdk.prototype.completeMainFile = function(parameters) {
   }
 
   if(parameters[13].a.length > 0) {
-    scopes = "\n"+`  this.defaultValues.scopes = ${parameters[13].a};`;
+    scopes = "\n"+`  this.defaultValues.scopes = [${parameters[13].a}];`;
   }
 
   if(parameters[8].a.length > 0) {
@@ -728,9 +728,11 @@ Sdk.prototype.completeMainFile = function(parameters) {
  * @param {Bot~doRequestParameters} parameters
  */
 ${this.botClassName}.prototype.addQueryAccessToken = function(parameters) {
-  get.access_token = this.accessToken.access_token;
+  if(parameters.get === undefined) {
+    parameters.get = {};
+  }
 
-  return get;
+  parameters.get.access_token = this.accessToken.access_token;
 };
 
 /**
@@ -828,7 +830,6 @@ ${this.botClassName}.prototype.getAccessTokenFromAccessTokenData = function(acce
  */
 ${this.botClassName}.prototype.getTypeAccessTokenFromAccessTokenData = function(accessTokenData) {
   throw this.RError('XXX-010', "Implement getTypeAccessTokenFromAccessTokenData");
-  //noinspection JSUnresolvedVariable
   // return accessTokenData.token_type;
 };
 
@@ -936,21 +937,25 @@ Sdk.prototype.completeInstallFile = function(parameters) {
   };
 
   if(parameters.install) {
-
+    for(var key in parameters.install) {
+      if (parameters.install.hasOwnProperty(key)) {
+        install.configuration[key] = parameters.install[key];
+      }
+    }
   }
 
   return JSON.stringify(install);
 };
 
-Sdk.prototype.saveNewBotInInstalledJson = function(configuration){
+Sdk.prototype.saveNewBotInInstalledJson = function(parameters){
   var newBot = {
     bot_name: this.botName,
     bot_folder: this.botFolderDst,
     configurations: [],
   };
 
-  if(configuration) {
-    newBot.configurations.push(configuration);
+  if(parameters.configuration) {
+    newBot.configurations.push(parameters.configuration);
   }
 
   this.botsInstalledJson.push(newBot);
