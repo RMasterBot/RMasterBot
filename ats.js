@@ -92,10 +92,11 @@ Ats.prototype.treatRequestUrl = function(req, res) {
 };
 
 Ats.prototype.showHome = function(req, res) {
-  var accessTokenUrl = this.bot.getAccessTokenUrl(this.scopes);
-  require('npmlog').info('ATS', 'Generate authentification url %s', accessTokenUrl);
-  res.writeHead(302, {'Location': accessTokenUrl});
-  res.end();
+  this.bot.getAccessTokenUrl(this.scopes, function(accessTokenUrl){
+    require('npmlog').info('ATS', 'Generate authentification url %s', accessTokenUrl);
+    res.writeHead(302, {'Location': accessTokenUrl});
+    res.end();
+  });
 };
 
 Ats.prototype.treatResponse = function(req, res) {

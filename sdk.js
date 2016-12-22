@@ -767,16 +767,18 @@ ${this.botClassName}.prototype.getRemainingRequestsFromResult = function(resultF
 /**
  * Get url for Access Token when you have to authorize an application
  * @param {string} scopes
- * @return {string} url
+ * @param {*} callback
  */
-${this.botClassName}.prototype.getAccessTokenUrl = function(scopes) {
+${this.botClassName}.prototype.getAccessTokenUrl = function(scopes, callback) {
   throw this.RError('XXX-005', "Implement getAccessTokenUrl");
   /*
-  return 'https://example.com/oauth/?'
+  var url = 'https://example.com/oauth/?'
     + 'response_type=code&'
     + 'redirect_uri=' + this.currentConfiguration.callback_url + '&'
     + 'client_id=' + this.currentConfiguration.consumer_key + '&'
     + 'scope=' + this.getScopeForAccessTokenServer(scopes);
+
+  callback(url);
   */
 };
 
