@@ -86,7 +86,7 @@ Ats.prototype.treatRequestUrl = function(req, res) {
   if(req.url === '/') {
     this.showHome(req, res);
   }
-  else {
+  else if(req.url !== '/favicon.ico'){
     this.treatResponse(req, res);
   }
 };
