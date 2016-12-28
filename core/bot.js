@@ -163,9 +163,10 @@ Bot.prototype.setAccessToken = function(accessToken) {
 /**
  * Get url for Access Token when you have to authorize an application
  * @param {string} scopes
+ * @param {function} callback
  * @return {string} url
  */
-Bot.prototype.getAccessTokenUrl = function(scopes) {
+Bot.prototype.getAccessTokenUrl = function(scopes, callback) {
   throw this.RError('BOT-005', "Implement getAccessTokenUrl");
 };
 
@@ -175,7 +176,7 @@ Bot.prototype.extractResponseDataForAccessToken = function(req) {
 
 /**
  * Request Access Token after getting code
- * @param {string} responseData
+ * @param {*} responseData
  * @param {Bot~requestAccessTokenCallback} callback
  */
 Bot.prototype.requestAccessToken = function(responseData, callback) {
