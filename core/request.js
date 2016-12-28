@@ -40,6 +40,11 @@ function Request(){
    * @property {boolean}
    */
   this.enableDirectoryForFiles = false;
+
+  this.streamValues = {
+    endChunkPart: '\r\n',
+    endChunkLength: 2
+  };
 }
 
 /**
@@ -132,10 +137,16 @@ Request.prototype.request = function(parameters, callback) {
   var boundary = '-----np' + Math.random();
   var postData = '';
   var bodyToWrite = [];
+  var useStream = false;
+  var stream;
 
   validateParameters(parameters);
   if(parameters.body) {
     postData = getKeyFromParametersAndType('body', parameters, 'string', '');
+  }
+  if(parameters.stream) {
+    useStream = true;
+    stream = this.getStream();
   }
 
   parameters = this.formatParametersForRequest(parameters);
@@ -188,19 +199,39 @@ Request.prototype.request = function(parameters, callback) {
   httpRequest = require(parameters.httpModule).request(options, function(res) {
     var data = '';
 
+    if(useStream) {
+      //noinspection JSUnresolvedVariable
+      if(res.statusCode >= 300) {
+        stream.emit('error', res);
+      }
+      else {
+        stream.emit('response', res);
+      }
+    }
+
     //noinspection JSUnresolvedFunction
     res.on('data', function(chunkData) {
-      data+= chunkData;
+      if(useStream) {
+        stream.receive(chunkData);
+      }
+      else {
+        data+= chunkData;
+      }
     });
 
     //noinspection JSUnresolvedFunction
     res.on('end', function() {
-      //noinspection JSUnresolvedVariable
-      callback(null, {
-        'statusCode': res.statusCode,
-        'headers': res.headers,
-        'data': data
-      });
+      if(useStream) {
+        stream.emit('end', res);
+      }
+      else {
+        //noinspection JSUnresolvedVariable
+        callback(null, {
+          'statusCode': res.statusCode,
+          'headers': res.headers,
+          'data': data
+        });
+      }
     });
   });
 
@@ -246,8 +277,17 @@ Request.prototype.request = function(parameters, callback) {
   }
 
   httpRequest.on('error', function(e) {
-    callback(e, null);
+    if(useStream) {
+      stream.emit('error', e);
+    }
+    else {
+      callback(e, null);
+    }
   });
+
+  if(useStream) {
+    callback(null, stream);
+  }
 };
 
 /**
@@ -521,6 +561,51 @@ Request.prototype.transformParameterGet = function(values) {
   }
 
   return queryString;
+};
+
+Request.prototype.getStream = function() {
+  var that = this;
+  var events = require('events');
+  var eventEmitter = new events.EventEmitter();
+
+  eventEmitter.data = '';
+  eventEmitter.endChunkPart = this.streamValues.endChunkPart;
+  eventEmitter.endChunkLength = this.streamValues.endChunkLength;
+  eventEmitter.treatConcatChunkFromStream = this.treatConcatChunkFromStream;
+  eventEmitter.treatDataFromStream = this.treatDataFromStream;
+  eventEmitter.receive = function receive(chunkData) {
+    this.data = that.treatConcatChunkFromStream(this.data, chunkData);
+
+    var index, data;
+
+    while ((index = this.data.indexOf(this.endChunkPart)) > -1) {
+      data = this.data.slice(0, index);
+      this.data = this.data.slice(index + this.endChunkLength);
+      if (data.length > 0) {
+        try {
+          data = that.treatDataFromStream(data);
+          this.emit('data', data);
+        }
+        catch (error) {
+          error.source = data;
+          this.emit('error', error);
+        }
+      }
+      else {
+        this.emit('ping');
+      }
+    }
+  };
+
+  return eventEmitter;
+};
+
+Request.prototype.treatConcatChunkFromStream = function(data, chunk) {
+  return data.concat(chunk.toString('utf8'));
+};
+
+Request.prototype.treatDataFromStream = function(data) {
+  return JSON.parse(data);
 };
 
 /**
