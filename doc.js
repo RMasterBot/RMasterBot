@@ -117,7 +117,19 @@ Doc.prototype.displayEndpoint = function(endpoint) {
  * @param {Doc~Endpoints} endpoint
  */
 Doc.prototype.displayDetailsEndpoint = function(endpoint) {
-  console.log(endpoint.method.toUpperCase().green + ' ' + endpoint.url.magenta + "\nScope: ".cyan + endpoint.scope + "\nDescription: ".cyan + endpoint.description);
+  var texts = [
+    endpoint.method.toUpperCase().green + ' ' + endpoint.url.magenta
+  ];
+
+  if(endpoint['scope']) {
+    texts.push("Scope: ".cyan + endpoint.scope);
+  }
+
+  if(endpoint['description']) {
+    texts.push("Description: ".cyan + endpoint.description);
+  }
+
+  console.log(texts.join("\n"));
 
   this.displayAdditionalInformations(endpoint);
   this.displayParametersRequired(endpoint.parameters.required);
