@@ -69,18 +69,18 @@ Doc.prototype.showDoc = function() {
     return;
   }
 
-  var methodIndex = this.methods.indexOf(this.arguments[0]);
+  var methodIndex = this.methods.indexOf(this.arguments[0].toUpperCase());
   if(methodIndex !== -1) {
     if(this.arguments.length < 2) {
       for (i = 0; i < this.api.endpoints.length; i++) {
-        if(this.api.endpoints[i].method === this.methods[methodIndex]) {
+        if(this.api.endpoints[i].method.toUpperCase() === this.methods[methodIndex].toUpperCase()) {
           this.displayEndpoint(this.api.endpoints[i]);
         }
       }
     }
     else {
       for (i = 0; i < this.api.endpoints.length; i++) {
-        if(this.api.endpoints[i].method === this.methods[methodIndex] && this.api.endpoints[i].url === this.arguments[1]) {
+        if(this.api.endpoints[i].method.toUpperCase() === this.methods[methodIndex].toUpperCase() && this.api.endpoints[i].url.toUpperCase() === this.arguments[1].toUpperCase()) {
           this.displayDetailsEndpoint(this.api.endpoints[i]);
           return;
         }
@@ -94,7 +94,7 @@ Doc.prototype.showDoc = function() {
   }
   else {
     for (i = 0; i < this.api.endpoints.length; i++) {
-      if(this.api.endpoints[i].url === this.arguments[0]) {
+      if(this.api.endpoints[i].url.toUpperCase() === this.arguments[0].toUpperCase()) {
         this.displayDetailsEndpoint(this.api.endpoints[i]);
         return;
       }
@@ -119,8 +119,24 @@ Doc.prototype.displayEndpoint = function(endpoint) {
 Doc.prototype.displayDetailsEndpoint = function(endpoint) {
   console.log(endpoint.method.toUpperCase().green + ' ' + endpoint.url.magenta + "\nScope: ".cyan + endpoint.scope + "\nDescription: ".cyan + endpoint.description);
 
+  this.displayAdditionalInformations(endpoint);
   this.displayParametersRequired(endpoint.parameters.required);
   this.displayParametersOptional(endpoint.parameters.optional);
+};
+
+Doc.prototype.displayAdditionalInformations = function(endpoint) {
+  if(endpoint.moreInfos === undefined) {
+    return;
+  }
+
+  var idxMoreInfos = 0;
+  var lenMoreInfos = endpoint.moreInfos.length;
+  var textMoreInfos = [];
+  for(; idxMoreInfos < lenMoreInfos; idxMoreInfos++){
+    textMoreInfos.push(endpoint.moreInfos[idxMoreInfos].label + ': ' + endpoint.moreInfos[idxMoreInfos].value);
+  }
+
+  console.log(textMoreInfos.join("\n"));
 };
 
 /**
