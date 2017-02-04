@@ -582,7 +582,7 @@ Bot.prototype.getUserForNewAccessToken = function(formatAccessToken, callback) {
 };
 
 Bot.prototype.getScopeForAccessTokenServer = function(scopes) {
-  if(scopes.length < 1) {
+  if(scopes === null || scopes.length < 1) {
     return this.defaultValues.scopes;
   }
 
