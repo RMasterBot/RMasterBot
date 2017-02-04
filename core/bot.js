@@ -670,7 +670,7 @@ Bot.prototype.doRequest = function(parameters, callback) {
       var data = JSON.parse(result.data);
       var responseData = that.extractDataFromRequest(data);
 
-      if(result.statusCode >= 400) {
+      if(result.statusCode >= 400 || that.hasErrorInDataFromRequest(data)) {
         callback(that.extractErrorMessageFromRequest(data), false);
         return;
       }
@@ -708,6 +708,10 @@ Bot.prototype.extractErrorMessageFromRequest = function(data) {
   }
   
   return data;
+};
+
+Bot.prototype.hasErrorInDataFromRequest = function(data) {
+  return data.error !== undefined;
 };
 
 Bot.prototype.extractPaginationFromRequest = function(data) {
