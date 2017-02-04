@@ -337,6 +337,7 @@ Request.prototype.extractParameterMethodForRequest = function (parameters) {
 Request.prototype.extractParameterPathForRequest = function (parameters) {
   var path;
   var prefix;
+  var finalPath;
 
   validateParameters(parameters);
 
@@ -348,7 +349,12 @@ Request.prototype.extractParameterPathForRequest = function (parameters) {
 
   prefix = prefix.trim();
 
-  return prefix + path;
+  finalPath = prefix + path;
+  if(finalPath.charAt(0) !== '/') {
+    return '/' + finalPath;
+  }
+  
+  return finalPath;
 };
 
 /**
