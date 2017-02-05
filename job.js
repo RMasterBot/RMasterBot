@@ -2,6 +2,7 @@ function Job() {
   this.rmasterbot = require('./rmasterbot');
   this.bot = null;
   this.job = null;
+  this.listJobsDemanded = false;
   this.arguments = [];
 
   this.global = {
@@ -23,6 +24,9 @@ Job.prototype.getArguments = function() {
   for(var i = 2; i < countArguments; i++) {
     if(process.argv[i] === '-h' || process.argv[i] === '--help') {
       this.showHelp();
+    }
+    else if(process.argv[i] === '-o' || process.argv[i] === '--output') {
+      this.listJobsDemanded = true;
     }
     else if(process.argv[i] === '-a' || process.argv[i] === '--app') {
       i++;
@@ -66,12 +70,20 @@ Job.prototype.getArguments = function() {
     this.stopProcess('No bot provided');
   }
 
+  if(this.listJobsDemanded) {
+    this.showListJobs();
+  }
+
   if(this.job === null) {
     this.stopProcess('No job provided');
   }
 
   this.logInfo('Bot to use: ' + this.bot);
   this.logInfo('Job to use: ' + this.job);
+};
+
+Job.prototype.showListJobs = function() {
+  process.exit(1);
 };
 
 Job.prototype.showHelp = function() {
@@ -88,6 +100,7 @@ Job.prototype.showHelp = function() {
     console.log("    " + '-a --app <app_name>     use specific app by using name defined in conf');
     console.log("    " + '-u --user <user_name>   use specific user access_token');
     console.log("    " + '-o --output <filepath>  save the output in a file');
+    console.log("    " + '-l --list               list all jobs available');
 
     console.log("\n" + 'Informations:');
     console.log("    " + 'Job name is filename without .js');
@@ -99,7 +112,7 @@ Job.prototype.showHelp = function() {
 
     var privateJobsFile = this.botConfigured.getPrivateJobFile(this.job);
     var jobsFile = this.botConfigured.getJobFile(this.job);
-    console.log(privateJobsFile);
+
     if(privateJobsFile !== null) {
       content = require('fs').readFileSync(privateJobsFile, 'utf-8');
     }
