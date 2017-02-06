@@ -655,6 +655,10 @@ Sdk.prototype.createBotFiles = function(parameters){
   require('fs').writeFileSync(require('path').join(this.rootFolder, 'applications', this.botFolderDst.toLowerCase(), 'main.js'), this.completeMainFile(parameters));
   require('fs').writeFileSync(require('path').join(this.rootFolder, 'installs', this.botName.toLowerCase() + '.json'), this.completeInstallFile(parameters));
 
+  require('fs').mkdir(require('path').join(this.rootFolder, 'jobs', this.botFolderDst.toLowerCase(), 'api'));
+  require('fs').writeFileSync(require('path').join(this.rootFolder, 'jobs', this.botFolderDst.toLowerCase(), 'api', 'me.js'), this.completeApiMeFile(parameters));
+  require('fs').writeFileSync(require('path').join(this.rootFolder, 'models', this.botFolderDst.toLowerCase(), 'User.js'), this.completeModelUserFile(parameters));
+
   this.saveNewBotInInstalledJson(parameters);
 
   this.end();
@@ -872,15 +876,18 @@ ${this.botClassName}.prototype.getUserForNewAccessToken = function(formatAccessT
       callback(err, null);
     }
     else {
-      var username = (user !== null) ? user.getUsername() : null;
+      var username = (user !== null) ? user.getName() : null;
       callback(null, username);
     }
   });
   */
 };` + "\n\n";
 
+  var addQueryAccessToken = 'this.addQueryAccessToken(parameters);'+"\n  ";
+
   if(parameters[12].a === 'no') {
     ats = '';
+    addQueryAccessToken = '';
   }
 
   return `var Bot = require(require('path').join('..','..','core','bot.js'));
@@ -911,17 +918,20 @@ ${this.botClassName}.prototype.constructor = ${this.botClassName};
  * @param {Bot~requestCallback|*} callback
  */
 ${this.botClassName}.prototype.prepareRequest = function(parameters, callback) {
-  this.doRequest(parameters, callback);
+  ${addQueryAccessToken}this.doRequest(parameters, callback);
 };
 
 /**
- * API example
+ * API me
  * @param {${this.botClassName}~requestCallback} callback
  */
-${this.botClassName}.prototype.example = function(callback) {
+${this.botClassName}.prototype.me = function(callback) {
   var params = {
     method: 'GET',
-    path: 'example'
+    path: 'me',
+    output: {
+      model: 'User'
+    }
   };
 
   this.prepareRequest(params, callback);
@@ -966,6 +976,82 @@ Sdk.prototype.completeInstallFile = function(parameters) {
   }
 
   return JSON.stringify(install);
+};
+
+Sdk.prototype.completeApiMeFile = function(parameters) {
+  return `/*
+ me
+
+ Usage:
+   node job <bot_name> me (-a | --app) <app_name> (-u | --user) <user_name>
+
+ API endpoint used:
+   GET /me
+
+ Scope:
+   xxx
+*/
+/**
+ * @param {${this.botClassName}} bot
+ * @param {string[]} extraArguments
+ * @param {Job~Callback} callback
+ */
+module.exports = function(bot, extraArguments, callback) {
+  bot.me(function (error, data) {
+    if(error) {
+      if(callback) {
+        callback(error, null);
+      }
+      return;
+    }
+
+    if(callback) {
+      callback(null, data);
+    }
+  });
+};`;
+};
+
+Sdk.prototype.completeModelUserFile = function(parameters) {
+  return `/**
+ * User Model
+ * @class User
+ * @param {User~Json} user json of the user
+ * @constructor
+ */
+function User(json) {
+  this.user = json;
+}
+
+/**
+ * @return {User~Json|*}
+ */
+User.prototype.getJson = function() {
+  return this.user;
+};
+
+/**
+ * @return {string}
+ */
+User.prototype.getId = function() {
+  return this.user.id;
+};
+
+/**
+ * @return {string}
+ */
+User.prototype.getName = function() {
+  return this.user.name;
+};
+
+module.exports = User;
+
+/**
+ * User Json
+ * @typedef {Object} User~Json
+ * @property {string} id
+ * @property {string} name
+ */`;
 };
 
 Sdk.prototype.saveNewBotInInstalledJson = function(parameters){
