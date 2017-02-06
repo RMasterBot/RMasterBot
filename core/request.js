@@ -349,7 +349,10 @@ Request.prototype.extractParameterPathForRequest = function (parameters) {
 
   prefix = prefix.trim();
 
-  finalPath = prefix + path;
+  finalPath = prefix + '/' + path;
+
+  finalPath = finalPath.replace(/\/{2,}/g, '/');
+
   if(finalPath.charAt(0) !== '/') {
     return '/' + finalPath;
   }
