@@ -25,7 +25,7 @@ Job.prototype.getArguments = function() {
     if(process.argv[i] === '-h' || process.argv[i] === '--help') {
       this.showHelp();
     }
-    else if(process.argv[i] === '-o' || process.argv[i] === '--output') {
+    else if(process.argv[i] === '-l' || process.argv[i] === '--list') {
       this.listJobsDemanded = true;
     }
     else if(process.argv[i] === '-a' || process.argv[i] === '--app') {
@@ -66,12 +66,21 @@ Job.prototype.getArguments = function() {
     }
   }
 
+  var bot = null;
   if(this.bot === null) {
     this.stopProcess('No bot provided');
   }
+  else {
+    try {
+      bot = this.rmasterbot.getBot(this.bot);
+    }
+    catch(e){
+      this.stopProcess(e.toString());
+    }
+  }
 
   if(this.listJobsDemanded) {
-    this.showListJobs();
+    this.showListJobs(bot);
   }
 
   if(this.job === null) {
@@ -82,7 +91,15 @@ Job.prototype.getArguments = function() {
   this.logInfo('Job to use: ' + this.job);
 };
 
-Job.prototype.showListJobs = function() {
+Job.prototype.showListJobs = function(bot) {
+  var list = this.readDeepDir(bot.privateJobsFolder);
+  if(list.length > 0) {
+    console.log('Private jobs:');
+    console.log(list + "\n");
+  }
+  console.log('Jobs:');
+  console.log(this.readDeepDir(bot.jobsFolder));
+
   process.exit(1);
 };
 
@@ -222,6 +239,27 @@ Job.prototype.logInfo = function(string) {
 Job.prototype.stopProcess = function(exception) {
   require('npmlog').error('RMasterBot', exception);
   process.exit(-1);
+};
+
+Job.prototype.readDeepDir = function (path, subpath) {
+  var files = require('fs').readdirSync(path);
+  var countFiles = files.length;
+  var idxFiles = 0;
+  var stats;
+  var listFiles = [];
+  subpath = subpath || '';
+
+  for(; idxFiles < countFiles; idxFiles++) {
+    stats = this.isFileExists(require('path').join(path, files[idxFiles]));
+    if(stats.isFile()) {
+      listFiles.push(' - ' + subpath + files[idxFiles].toLowerCase());
+    }
+    else if(stats.isDirectory()) {
+      listFiles = listFiles.concat(this.readDeepDir(require('path').join(path, files[idxFiles]), require('path').join(subpath, files[idxFiles], '/') ));
+    }
+  }
+
+  return listFiles.join("\n");
 };
 
 new Job();
