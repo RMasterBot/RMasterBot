@@ -655,7 +655,7 @@ Sdk.prototype.createBotFiles = function(parameters){
   require('fs').writeFileSync(require('path').join(this.rootFolder, 'applications', this.botFolderDst.toLowerCase(), 'main.js'), this.completeMainFile(parameters));
   require('fs').writeFileSync(require('path').join(this.rootFolder, 'installs', this.botName.toLowerCase() + '.json'), this.completeInstallFile(parameters));
 
-  require('fs').mkdir(require('path').join(this.rootFolder, 'jobs', this.botFolderDst.toLowerCase(), 'api'));
+  require('fs').mkdirSync(require('path').join(this.rootFolder, 'jobs', this.botFolderDst.toLowerCase(), 'api'));
   require('fs').writeFileSync(require('path').join(this.rootFolder, 'jobs', this.botFolderDst.toLowerCase(), 'api', 'me.js'), this.completeApiMeFile(parameters));
   require('fs').writeFileSync(require('path').join(this.rootFolder, 'models', this.botFolderDst.toLowerCase(), 'User.js'), this.completeModelUserFile(parameters));
 
