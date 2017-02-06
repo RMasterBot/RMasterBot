@@ -85,6 +85,7 @@ You can attach a name for your custom bot like pin for pinterest in bots.json
 
 ## Bots In Progress
 * [Deezer](https://github.com/rancoud/RMBDeezer)
+* [Linkedin](https://github.com/rancoud/RMBLinkedin)
 * [Twitter](https://github.com/rancoud/RMBTwitter)
 
 ## LICENCE
