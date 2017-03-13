@@ -139,6 +139,9 @@ Request.prototype.request = function(parameters, callback) {
   var bodyToWrite = [];
   var useStream = false;
   var stream;
+  var useOutputFile = false;
+  var outputFilepath;
+  var outputStreamFile;
 
   validateParameters(parameters);
   if(parameters.body) {
@@ -147,6 +150,11 @@ Request.prototype.request = function(parameters, callback) {
   if(parameters.stream) {
     useStream = true;
     stream = this.getStream();
+  }
+  if(parameters.outputFilepath) {
+    useOutputFile = true;
+    outputFilepath = parameters.outputFilepath;
+    outputStreamFile = require('fs').createWriteStream(outputFilepath);
   }
 
   parameters = this.formatParametersForRequest(parameters);
@@ -208,11 +216,24 @@ Request.prototype.request = function(parameters, callback) {
         stream.emit('response', res);
       }
     }
+    else if(useOutputFile) {
+      res.pipe(outputStreamFile);
+      outputStreamFile.on('finish', function() {
+        outputStreamFile.close(callback(null, {
+          'statusCode': res.statusCode,
+          'headers': res.headers,
+          'data': JSON.stringify({path: outputFilepath})
+        }));
+      });
+    }
 
     //noinspection JSUnresolvedFunction
     res.on('data', function(chunkData) {
       if(useStream) {
         stream.receive(chunkData);
+      }
+      else if(useOutputFile) {
+        //
       }
       else {
         data+= chunkData;
@@ -223,6 +244,9 @@ Request.prototype.request = function(parameters, callback) {
     res.on('end', function() {
       if(useStream) {
         stream.emit('end', res);
+      }
+      else if(useOutputFile) {
+        //
       }
       else {
         //noinspection JSUnresolvedVariable
