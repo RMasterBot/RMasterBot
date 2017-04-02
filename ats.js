@@ -124,6 +124,7 @@ Ats.prototype.treatResponse = function(req, res) {
 
       that.bot.saveNewAccessToken(accessTokenData);
       require('npmlog').info('ATS', 'New Access Token %s saved', accessTokenData.user);
+      res.write('New Access Token ' + accessTokenData.user + ' saved');
       res.end();
     });
   });
