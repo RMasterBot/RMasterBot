@@ -344,7 +344,7 @@ Sdk.prototype.isBotNameExist = function(botName) {
   var countBots = this.botsInstalledJson.length;
 
   for(; idx < countBots; idx++) {
-    if(this.botsInstalledJson[idx].bot_name == botName) {
+    if(this.botsInstalledJson[idx].bot_name === botName) {
       return true;
     }
   }
@@ -357,7 +357,7 @@ Sdk.prototype.isBotFolderExist = function(botFolder) {
   var countBots = this.botsInstalledJson.length;
 
   for(; idx < countBots; idx++) {
-    if(this.botsInstalledJson[idx].bot_folder == botFolder) {
+    if(this.botsInstalledJson[idx].bot_folder === botFolder) {
       return true;
     }
   }
@@ -370,7 +370,7 @@ Sdk.prototype.getBotFolder = function(botName) {
   var countBots = this.botsInstalledJson.length;
 
   for(; idx < countBots; idx++) {
-    if(this.botsInstalledJson[idx].bot_name == botName) {
+    if(this.botsInstalledJson[idx].bot_name === botName) {
       return this.botsInstalledJson[idx].bot_folder;
     }
   }
@@ -470,7 +470,7 @@ Sdk.prototype.executeCreateBot = function() {
         }
         else {
           questions[idx].a = answer;
-          if(questions[idx].a == 'no' && questions[idx].jumpno) {
+          if(questions[idx].a === 'no' && questions[idx].jumpno) {
             idx = questions[idx].jumpno;
           }
           next();
@@ -635,7 +635,7 @@ Sdk.prototype.executeDeleteFolder = function() {
     this.deleteFolderRecursive(require('path').join(this.rootFolder, this.foldersToCreate[idx], this.folderToDelete));
   }
 
-  if(this.type == 'folder') {
+  if(this.type === 'folder') {
     this.end();
   }
 };
@@ -675,7 +675,7 @@ Sdk.prototype.generateConfiguration = function(parameters) {
   parameters.install = {};
   parameters.configuration = {};
 
-  if(parameters[16].a == 'no') {
+  if(parameters[16].a === 'no') {
     return false;
   }
 
@@ -708,14 +708,14 @@ Sdk.prototype.completeMainFile = function(parameters) {
   var remainingRequest = '';
   var remainingTime = '';
 
-  if(info.protocol == 'https:') {
+  if(info.protocol === 'https:') {
     httpModule = "\n"+`  this.defaultValues.httpModule = 'https';`;
     port = "\n"+`  this.defaultValues.port = 443;`;
     if(info.port) {
       port = "\n"+`  this.defaultValues.port = ${info.port};`;
     }
   }
-  else if(info.protocol == 'http:') {
+  else if(info.protocol === 'http:') {
     httpModule = "\n"+`  this.defaultValues.httpModule = 'http';`;
     port = "\n"+`  this.defaultValues.port = 80;`;
     if(info.port) {
@@ -764,8 +764,7 @@ ${this.botClassName}.prototype.addQueryAccessToken = function(parameters) {
  * @return {Number}
  */
 ${this.botClassName}.prototype.getRemainingRequestsFromResult = function(resultFromRequest) {
-  throw this.RError('XXX-008', "Implement getRemainingRequestsFromResult");
-  // return resultFromRequest.headers['x-ratelimit-remaining'] >> 0;
+  return this.defaultValues.defaultRemainingRequest - 1; 
 };
 
 /**
@@ -978,7 +977,7 @@ Sdk.prototype.completeInstallFile = function(parameters) {
   return JSON.stringify(install);
 };
 
-Sdk.prototype.completeApiMeFile = function(parameters) {
+Sdk.prototype.completeApiMeFile = function() {
   return `/*
  me
 
@@ -1012,11 +1011,11 @@ module.exports = function(bot, extraArguments, callback) {
 };`;
 };
 
-Sdk.prototype.completeModelUserFile = function(parameters) {
+Sdk.prototype.completeModelUserFile = function() {
   return `/**
  * User Model
  * @class User
- * @param {User~Json} user json of the user
+ * @param {User~Json} json of the user
  * @constructor
  */
 function User(json) {
@@ -1077,7 +1076,7 @@ Sdk.prototype.deleteBotInInstalledJson = function(botName){
   var tmp = [];
 
   for(; idx < countBots; idx++) {
-    if(this.botsInstalledJson[idx].bot_name != botName) {
+    if(this.botsInstalledJson[idx].bot_name !== botName) {
       tmp.push(this.botsInstalledJson[idx]);
     }
   }
@@ -1095,7 +1094,7 @@ Sdk.prototype.saveDuplicateBotInInstalledJson = function() {
   bot.configurations = [];
 
   for(; idx < countBots; idx++) {
-    if(this.botsInstalledJson[idx].bot_name == this.botNameDst) {
+    if(this.botsInstalledJson[idx].bot_name === this.botNameDst) {
       bot.configurations = this.botsInstalledJson[idx].configurations;
       if(this.botsInstalledJson[idx].packages) {
         bot.packages = this.botsInstalledJson[idx].packages;
