@@ -1,6 +1,6 @@
 {
   "name": "rmasterbot",
-  "version": "0.0.20",
+  "version": "0.0.21",
   "description": "RMasterBot",
   "main": "rmasterbot.js",
   "directories": {
@@ -13,14 +13,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rancoud/RMasterBot.git"
+    "url": "git+https://github.com/RMasterBot/RMasterBot.git"
   },
   "author": "Rancoud",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/rancoud/RMasterBot/issues"
+    "url": "https://github.com/RMasterBot/RMasterBot/issues"
   },
-  "homepage": "https://github.com/rancoud/RMasterBot#readme",
+  "homepage": "https://github.com/RMasterBot/RMasterBot#readme",
   "dependencies": {
     "colors": "^1.1.2",
     "cross-spawn": "^5.0.1",

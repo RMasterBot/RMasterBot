@@ -81,17 +81,17 @@ node install github_account_name/repository_name
 You can attach a name for your custom bot like pin for pinterest in bots.json
 
 ## Bots Done
-* [Pinterest](https://github.com/rancoud/RMBPinterest)
+* [Pinterest](https://github.com/RMasterBot/RMBPinterest)
 
 ## Bots In Progress
-* [Deezer](https://github.com/rancoud/RMBDeezer)
-* [Dropbox](https://github.com/rancoud/RMBDropbox)
-* [Github](https://github.com/rancoud/RMBGithub)
-* [Imgur](https://github.com/rancoud/RMBImgur)
-* [Linkedin](https://github.com/rancoud/RMBLinkedin)
-* [Spotify](https://github.com/rancoud/RMBSpotify)
-* [Tumblr](https://github.com/rancoud/RMBTumblr)
-* [Twitter](https://github.com/rancoud/RMBTwitter)
+* [Deezer](https://github.com/RMasterBot/RMBDeezer)
+* [Dropbox](https://github.com/RMasterBot/RMBDropbox)
+* [Github](https://github.com/RMasterBot/RMBGithub)
+* [Imgur](https://github.com/RMasterBot/RMBImgur)
+* [Linkedin](https://github.com/RMasterBot/RMBLinkedin)
+* [Spotify](https://github.com/RMasterBot/RMBSpotify)
+* [Tumblr](https://github.com/RMasterBot/RMBTumblr)
+* [Twitter](https://github.com/RMasterBot/RMBTwitter)
 
 ## LICENCE
 [MIT](../master/LICENCE)
