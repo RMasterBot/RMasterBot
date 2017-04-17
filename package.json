@@ -1,6 +1,6 @@
 {
   "name": "rmasterbot",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "description": "RMasterBot",
   "main": "rmasterbot.js",
   "directories": {
@@ -8,7 +8,6 @@
   },
   "scripts": {
     "test": "mocha --recursive",
-    "postinstall": "node install.js",
     "cover": "istanbul cover node_modules/mocha/bin/_mocha -- -R spec --recursive"
   },
   "repository": {
