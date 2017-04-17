@@ -104,7 +104,7 @@ describe('Request', function(){
       assert.strictEqual(instance.extractParameterPathForRequest({pathPrefix:' /v8 '}), '/v8/la');
       assert.strictEqual(instance.extractParameterPathForRequest({path:' /lo ', pathPrefix:' /v8 '}), '/v8/lo');
       assert.strictEqual(instance.extractParameterPathForRequest({path:' /lo ', pathPrefix:' '}), '/lo');
-      assert.strictEqual(instance.extractParameterPathForRequest({path:'', pathPrefix:''}), '');
+      assert.strictEqual(instance.extractParameterPathForRequest({path:'', pathPrefix:''}), '/');
     });
   });
 
