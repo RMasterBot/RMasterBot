@@ -101,13 +101,13 @@ Sdk.prototype.showHelp = function() {
   console.log("\n" + 'Sdk for RMasterBot.');
 
   console.log("\n" + 'Usage:');
-  console.log("    " + 'node sdk create bot <bot_name> [bot_folder]');
-  console.log("    " + 'node sdk create job <bot_name> <job_name>');
-  console.log("    " + 'node sdk create model <bot_name> <model_name>');
-  console.log("    " + 'node sdk export bot <bot_name> <path>');
-  console.log("    " + 'node sdk duplicate bot <bot_name_src> <bot_name_dst> [bot_folder]');
-  console.log("    " + 'node sdk delete bot <bot_name>');
-  console.log("    " + 'node sdk delete folder <bot_folder>');
+  console.log("    " + 'sdk create bot <bot_name> [bot_folder]');
+  console.log("    " + 'sdk create job <bot_name> <job_name>');
+  console.log("    " + 'sdk create model <bot_name> <model_name>');
+  console.log("    " + 'sdk export bot <bot_name> <path>');
+  console.log("    " + 'sdk duplicate bot <bot_name_src> <bot_name_dst> [bot_folder]');
+  console.log("    " + 'sdk delete bot <bot_name>');
+  console.log("    " + 'sdk delete folder <bot_folder>');
 
   console.log("\n" + 'Options:');
   console.log("    " + 'bot_name        bot name');

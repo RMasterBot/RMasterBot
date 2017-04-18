@@ -108,7 +108,7 @@ Job.prototype.showHelp = function() {
     console.log("\n" + 'Launch Job (dedicated task). It will create a pid file.');
 
     console.log("\n" + 'Usage:');
-    console.log("    " + 'node job <application> <job_name> [options]   launch job given');
+    console.log("    " + 'job <application> <job_name> [options]   launch job given');
 
     console.log("\n" + 'Options:');
     console.log("    " + 'application             use specific application network');

@@ -20,6 +20,7 @@ function Install() {
   this.hasToAddBot = true;
   this.choiceConflictBot = null;
   this.choiceConflictConfiguration = null;
+  this.silentMode = false;
 
   this.getArguments();
 }
@@ -49,6 +50,9 @@ Install.prototype.getArguments = function(){
     if(process.argv[idxArgs] === '-h' || process.argv[idxArgs] === '--help') {
       this.showHelp();
     }
+    else if(process.argv[idxArgs] === '-s' || process.argv[idxArgs] === '--silent') {
+      this.silentMode = true;
+    }
     else {
       this.botToInstall = process.argv[idxArgs];
     }
@@ -68,11 +72,14 @@ Install.prototype.showHelp = function(){
   console.log("\n" + 'Install bot for RMasterBot.');
 
   console.log("\n" + 'Usage:');
-  console.log("    " + 'node install <bot_name>    install a bot from RMasterBot list');
-  console.log("    " + 'node install <url>         install a custom bot with an url to a zip file');
+  console.log("    " + 'install <bot_name>    install a bot from RMasterBot list');
+  console.log("    " + 'install <bot_name>    install a bot from RMasterBot list');
+  console.log("    " + 'install <url>         install a bot with an url to a zip file');
+  console.log("    " + 'install <filepath>    install a bot with a filepath to a zip');
+  console.log("    " + 'install <path>        install a bot with a path to an extracted directory');
 
   console.log("\n" + 'Arguments:');
-  console.log("    " + 'bot_name    bot name from RMasterBot list: check in README');
+  console.log("    " + 'bot_name    bot name from RMasterBot list');
   console.log("    " + 'url         url to a zip file built for RMasterBot OR just github_account_name/repository_name');
 
   process.exit(1);
@@ -84,6 +91,7 @@ Install.prototype.askBotToInstall = function() {
   question += "  -> the name from RMasterBot list (see the list in README)\n";
   question += "  -> from github like that: github_account_name/repository_name\n";
   question += "  -> an url (http or https)\n";
+  question += "  -> a directory containing bot files\n";
   question += "or quit (q)\n";
   var rl = require('readline').createInterface({
     input: process.stdin,
@@ -128,15 +136,19 @@ Install.prototype.askBotToInstall = function() {
 
 Install.prototype.detectBotType = function() {
   var parts = this.botToInstall.split('/');
-
-  if(this.botToInstall.substring(0, 8) == 'https://') {
+  var supposedPath = this.isFileExists(this.botToInstall);
+console.log(this.botToInstall);
+  if(this.botToInstall.substring(0, 8) === 'https://') {
     this.botType = 'https';
   }
-  else if(this.botToInstall.substring(0, 7) == 'http://') {
+  else if(this.botToInstall.substring(0, 7) === 'http://') {
     this.botType = 'http';
   }
   else if(parts.length === 2 && parts[1].length > 0) {
     this.botType = 'github';
+  }
+  else if(supposedPath && supposedPath.isDirectory()){
+    this.botType = 'directory';
   }
   else if(parts.length === 1) {
     this.botType = 'RMasterBot'
@@ -153,7 +165,14 @@ Install.prototype.detectBotType = function() {
 
   this.logInfo('Type Bot: ' + this.botType);
   if(!this.isInteractifMode) {
-    this.downloadBot();
+    if(this.botType !== 'directory'){
+      this.downloadBot();
+    }
+    else{
+      this.tempBotFolder = this.botToInstall;
+      this.installFileFromNewBot = this.path.join(this.tempBotFolder, 'install.json');
+      this.checkInstallJson();
+    }
   }
   else {
     return true;
@@ -211,7 +230,6 @@ Install.prototype.downloadBot = function(options){
 
   request.on('error', function(error){
     that.stopProcess('Download error: ' + error.toString());
-    return;
   });
 
   request.end();
@@ -220,7 +238,7 @@ Install.prototype.downloadBot = function(options){
 Install.prototype.getOptions = function(){
   var host = null;
   var path = null;
-  var port = (this.botType == 'http') ? 80 : 443;
+  var port = (this.botType === 'http') ? 80 : 443;
   var url;
 
   if(this.botType === 'http' || this.botType === 'https') {
@@ -248,7 +266,7 @@ Install.prototype.getOptions = function(){
 };
 
 Install.prototype.getRequest = function(){
-  if(this.botType == 'http') {
+  if(this.botType === 'http') {
     return require('http');
   }
 
@@ -432,11 +450,11 @@ Install.prototype.checkInstallJson = function(){
 
   countBotsInstalled = botsInstalledJson.length;
   for(; idxBotsInstalled < countBotsInstalled; idxBotsInstalled++) {
-    if(botsInstalledJson[idxBotsInstalled].bot_folder == this.botToInstallJson.bot_folder) {
+    if(botsInstalledJson[idxBotsInstalled].bot_folder === this.botToInstallJson.bot_folder) {
       hasFolderProblem = true;
     }
 
-    if(botsInstalledJson[idxBotsInstalled].bot_name == this.botToInstallJson.bot_name) {
+    if(botsInstalledJson[idxBotsInstalled].bot_name === this.botToInstallJson.bot_name) {
       hasNameProblem = true;
     }
   }
@@ -445,7 +463,12 @@ Install.prototype.checkInstallJson = function(){
   this.logInfo('Bot Name: ' + this.botToInstallJson.bot_name);
 
   if(hasFolderProblem || hasNameProblem) {
-    this.resolveConflict(hasFolderProblem, hasNameProblem);
+    if(this.silentMode === false){
+      this.resolveConflict(hasFolderProblem, hasNameProblem);
+    }
+    else{
+      this.stopProcess('Conflict found in silent mode');
+    }
   }
   else {
     this.copyTempBotToFinalDestination();
@@ -552,15 +575,15 @@ Install.prototype.resolveConflict = function(hasFolderProblem, hasNameProblem){
     question+= "  -> change name and/or folder of new bot (c)\n";
     question+= "  -> quit (q)\n";
     rl.question(question, function(answer){
-      if(answer == 'c') {
+      if(answer === 'c') {
         that.choiceConflictBot = 'change';
         changeFolder();
       }
-      else if(answer == 'e') {
+      else if(answer === 'e') {
         that.choiceConflictBot = 'erase';
         eraseBot();
       }
-      else if(answer == 'q') {
+      else if(answer === 'q') {
         that.cleanup();
         that.logInfo('Stopped by user');
         releaseReadline();
@@ -665,7 +688,7 @@ Install.prototype.copyTempBotToFinalDestination = function() {
       }
     }
 
-    if(this.foldersToCreate[idxFoldersToCreate] == unitTestFolder) {
+    if(this.foldersToCreate[idxFoldersToCreate] === unitTestFolder) {
       this.copyFilesRecursive(this.path.join(this.tempBotFolder, 'test'), folder, 0);
     }
     else {
@@ -685,7 +708,13 @@ Install.prototype.copyTempBotToFinalDestination = function() {
       this.resolveConflictConfiguration();
     }
     else {
-      this.launchSetupConfiguration('add');
+      if(this.silentMode === false){
+        this.launchSetupConfiguration('add');
+      }
+      else{
+        this.addNewBotToSavedBotsFile();
+        this.endInstall();
+      }
     }
   }
 };
@@ -777,7 +806,7 @@ Install.prototype.launchSetupConfiguration = function(modificationType) {
     botsInstalledFileJson = JSON.parse(that.fs.readFileSync(this.botsInstalledFile, 'utf8'));
     countBotsInstalled = botsInstalledFileJson.length;
     for(idxGlobal = 0; idxGlobal < countBotsInstalled; idxGlobal++) {
-      if(this.botToInstallJson.bot_name == botsInstalledFileJson[idxGlobal].bot_name) {
+      if(this.botToInstallJson.bot_name === botsInstalledFileJson[idxGlobal].bot_name) {
         for(idxConfigurationNames = 0; idxConfigurationNames < botsInstalledFileJson[idxGlobal].configurations.length; idxConfigurationNames++) {
           configurationNameTaken.push(botsInstalledFileJson[idxGlobal].configurations[idxConfigurationNames].name);
         }
@@ -932,6 +961,10 @@ Install.prototype.stopProcess = function(exitMessage){
 };
 
 Install.prototype.cleanup = function() {
+  if(this.botType === 'directory'){
+    return true;
+  }
+
   this.deleteFolderRecursive(this.tempBotFolder);
   if (this.isFileExists(this.zipFilepath)) {
     this.fs.unlinkSync(this.zipFilepath);
