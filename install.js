@@ -75,7 +75,7 @@ Install.prototype.showHelp = function(){
   console.log("    " + 'install <bot_name>    install a bot from RMasterBot list');
   console.log("    " + 'install <bot_name>    install a bot from RMasterBot list');
   console.log("    " + 'install <url>         install a bot with an url to a zip file');
-  console.log("    " + 'install <filepath>    install a bot with a filepath to a zip');
+  //console.log("    " + 'install <filepath>    install a bot with a filepath to a zip');
   console.log("    " + 'install <path>        install a bot with a path to an extracted directory');
 
   console.log("\n" + 'Arguments:');
