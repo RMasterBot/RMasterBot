@@ -21,7 +21,7 @@
   },
   "homepage": "https://github.com/RMasterBot/RMasterBot#readme",
   "dependencies": {
-    "colors": "^1.1.2",
+    "colors": "1.1.2",
     "cross-spawn": "^5.0.1",
     "npmlog": "^4.0.0",
     "yauzl": "^2.6.0"
